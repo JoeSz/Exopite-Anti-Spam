@@ -1,0 +1,76 @@
+.eas-image-selector {
+    border: 1px solid #ccc;
+    padding: 10px;
+    display: block;
+    text-align: center;
+}
+.eas-image-selector-title {
+    display: block;
+}
+.eas-image-selector label > input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+    position: absolute;
+    z-index: -1;
+}
+.eas-image-selector svg {
+    padding: 5px;
+    width: 50px;
+    height: 50px;
+}
+.eas-image-selector label > input + svg {
+    cursor:pointer;
+    border: 1px solid #fff;
+    padding: 3px;
+}
+.eas-image-selector label > input:focus + svg {
+    border: 1px dotted #cacaca;
+}
+.eas-image-selector label > input:checked + svg {
+    color: #8AAF38;
+}
+.eas-image-selector-images {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.wpcf7-form [data-js="false"] {
+    position: absolute;
+    transform: scale(0);
+}
+.wpcf7-form-control-wrap.exanspsel {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+}
+.exanspsel > span {
+    display: block;
+    width: 100%;
+}
+.eas-image-selector.loading::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background:
+    rgba(255,255,255,.8);
+}
+.eas-image-selector.loading::after {
+    content: url('/wp-includes/images/spinner-2x.gif');
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(50% - -8px);
+    transform: translateY(-50%);
+    z-index: 2;
+    bottom: 0;
+}
+.eas-image-selector {
+    position: relative;
+}
