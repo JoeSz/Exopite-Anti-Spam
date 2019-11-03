@@ -140,9 +140,9 @@ class Exopite_Anti_Spam_Admin {
         $form_id = $_GET['post'];
         $options = get_post_meta( $form_id, 'exopite-anti-spam' );
 
-        $checked = ' checked="checked"';
-        if ( isset( $options[0]['timestamp'] ) && $options[0]['timestamp'] == 'no' ) {
-            $checked = '';
+        $checked = '';
+        if ( isset( $options[0]['timestamp'] ) && $options[0]['timestamp'] == 'yes' ) {
+            $checked = ' checked="checked"';
         }
 
         echo '<div class="eas-row">';
@@ -159,9 +159,9 @@ class Exopite_Anti_Spam_Admin {
 
         echo '</div>';
 
-        $checked = ' checked="checked"';
-        if ( isset( $options[0]['honeypot'] ) && $options[0]['honeypot'] == 'no' ) {
-            $checked = '';
+        $checked = '';
+        if ( isset( $options[0]['honeypot'] ) && $options[0]['honeypot'] == 'yes' ) {
+            $checked = ' checked="checked"';
         }
 
         echo '<div class="eas-row">';
@@ -180,9 +180,9 @@ class Exopite_Anti_Spam_Admin {
 
         echo '</div>';
 
-        $checked = ' checked="checked"';
-        if ( isset( $options[0]['badwords'] ) && $options[0]['badwords'] == 'no' ) {
-            $checked = '';
+        $checked = '';
+        if ( isset( $options[0]['badwords'] ) && $options[0]['badwords'] == 'yes' ) {
+            $checked = ' checked="checked"';
         }
 
         echo '<div class="eas-row">';
