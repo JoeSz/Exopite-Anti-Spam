@@ -115,7 +115,11 @@ class Exopite_Anti_Spam_Public {
 
         $wpcf7 = WPCF7_ContactForm::get_current();
 
-        $cf7_meta = get_post_meta( $wpcf7->id );
+        if ( ! $wpcf7 ) {
+            return false;
+        }
+
+        $cf7_meta = get_post_meta( $wpcf7->id() );
 
         if ( isset( $cf7_meta['exopite-anti-spam'][0] ) ) {
 
@@ -237,6 +241,11 @@ class Exopite_Anti_Spam_Public {
         return $token_valid;
     }
 
+    /**
+     * I'm not sure yet, logged user see/validate this fields:
+     * - yes: more security? site admin can see it is working
+     * - no: site admin can see it is working, need this extra security for logged in users?
+     */
     public function is_user_logged_in() {
 
         // DEBUG
@@ -337,11 +346,17 @@ class Exopite_Anti_Spam_Public {
 
     public function get_image_captcha_html( $icons_amount, $selected_amount, $wrapper = true ) {
 
+        /**
+         * In AJAX call this will be false.
+         */
         $options = $this->get_cf7_meta();
         $ajaxload = false;
         if ( $options && $options['ajaxload'] === 'yes' ) {
             $ajaxload = true;
         }
+
+        $instance = WPCF7_ContactForm::get_current();
+        $ajaxload = apply_filters( 'exopite_anti_spam_ajaxload', $ajaxload, $instance );
 
         $icons = new Exopite_Anti_Spam_Icons();
         $choices = $icons->get_icons( $icons_amount );
@@ -370,7 +385,7 @@ class Exopite_Anti_Spam_Public {
         if ( $options && $options['ajaxload'] === 'yes' && ! isset( $_POST['action'] ) ) {
             $inner = '<span class="exanspsel-ajax-loading">' . esc_attr__( 'Loading...', 'exopite-anti-spam' ) . '</span>';
         } else {
-            $inner .= esc_attr__( 'Please select ', 'exopite-anti-spam' );
+            $inner = esc_attr__( 'Please select ', 'exopite-anti-spam' );
 
             $inner .= $this->generate_image_captcha_title( $seleted_titles );
             $inner .= '</span>';
@@ -386,10 +401,21 @@ class Exopite_Anti_Spam_Public {
         $output .= $inner;
 
         $output .= '</span></span>';
+        // $output .= '<input type="text" name="exanspsel-auth" class="exanspsel-auth" value="' . $selected_keys_encrypted . '" autocomplete="off" tabindex="-1">';
         $output .= '<input type="hidden" name="exanspsel-auth" class="exanspsel-auth" value="' . $selected_keys_encrypted . '" autocomplete="off" tabindex="-1">';
 
+        $error = '';
+
+        $submission = WPCF7_Submission::get_instance();
+        if ( $submission ) {
+            $invalid_fields = $submission->get_invalid_fields();
+            if ( isset( $invalid_fields['exanspsel']['reason'] ) ) {
+                $error = '<span role="alert" class="wpcf7-not-valid-tip">' . $invalid_fields['exanspsel']['reason'] . '</span>';
+            }
+        }
+
         if ( $wrapper ) {
-            return '<span class="wpcf7-form-control-wrap exanspsel"><span class="wpcf7-form-control wpcf7-checkbox">' . $output . '</span></span>';
+            return '<span class="wpcf7-form-control-wrap exanspsel"><span class="wpcf7-form-control wpcf7-checkbox">' . $output . $error . '</span></span>';
         } else {
             return $output;
         }
@@ -417,8 +443,16 @@ class Exopite_Anti_Spam_Public {
             return '';
         }
 
+        $timestamp = false;
         $options = $this->get_cf7_meta();
-        if ( $options && $options['timestamp'] === 'no' ) {
+        if ( $options && $options['timestamp'] === 'yes' ) {
+            $timestamp = true;
+        }
+
+        $instance = WPCF7_ContactForm::get_current();
+        $timestamp = apply_filters( 'exopite_anti_spam_timestamp', $timestamp, $tag, $instance );
+
+        if ( ! $timestamp ) {
             return '';
         }
 
@@ -444,7 +478,15 @@ class Exopite_Anti_Spam_Public {
         }
 
         $options = $this->get_cf7_meta();
-        if ( $options && $options['honeypot'] === 'no' ) {
+        $honeypot = false;
+        if ( $options && $options['honeypot'] === 'yes' ) {
+            $honeypot = true;
+        }
+
+        $instance = WPCF7_ContactForm::get_current();
+        $honeypot = apply_filters( 'exopite_anti_spam_honeypot', $honeypot, $tag, $instance );
+
+        if ( ! $honeypot ) {
             return '';
         }
 
@@ -481,12 +523,17 @@ class Exopite_Anti_Spam_Public {
         $html = '';
 
         $tag = new WPCF7_FormTag( $tag );
+        $instance = WPCF7_ContactForm::get_current();
 
         $icons_amount = $tag->get_option( 'icon', 'int', true );
         if ( ! $icons_amount ) $icons_amount = 5;
 
+        $icons_amount = apply_filters( 'exopite_anti_spam_icons_amount', $icons_amount, $tag, $instance );
+
         $selected_amount = $tag->get_option( 'choose', 'int', true );
         if ( ! $selected_amount ) $selected_amount = 2;
+
+        $selected_amount = apply_filters( 'exopite_anti_spam_selected_amount', $selected_amount, $tag, $instance );
 
         $captcha_html = $this->get_image_captcha_html( $icons_amount, $selected_amount );
 
@@ -505,7 +552,6 @@ class Exopite_Anti_Spam_Public {
 
         if ( $this->timeout ) {
 
-            $tag->name = $tags[0]->name;
             $result->invalidate( $tags[0], esc_attr__( 'Your session has timed out. Please refresh and try again.', 'exopite-anti-spam' ) );
 
         }
@@ -520,7 +566,7 @@ class Exopite_Anti_Spam_Public {
             return $result;
         }
 
-        $tag = new WPCF7_Shortcode( $tag );
+        $tag = new WPCF7_FormTag( $tag );
 
         if ( empty( $_POST['exanspsel'] ) ) {
 
@@ -531,6 +577,12 @@ class Exopite_Anti_Spam_Public {
 
         if ( empty( $_POST['exanspsel-auth'] ) ) {
             return $this->mark_as_spam( $result, 'captcha auth empty' );
+        }
+
+        if ( ! isset( $_POST['exanspsel'] ) ) {
+            $tag->name = "exanspsel";
+            $result->invalidate( $tag, esc_attr__( 'Please select the correct icon(s).', 'exopite-anti-spam' ) );
+            return $result;
         }
 
         $selected = $_POST['exanspsel'];
@@ -588,11 +640,6 @@ class Exopite_Anti_Spam_Public {
     public function wpcf7_validate_eastimestamp( $result, $tag ) {
 
         if ( $this->is_user_logged_in() ) {
-            return $result;
-        }
-
-        $options = $this->get_cf7_meta();
-        if ( $options && $options['timestamp'] === 'no' ) {
             return $result;
         }
 
@@ -656,11 +703,14 @@ class Exopite_Anti_Spam_Public {
         }
 
         $options = $this->get_cf7_meta();
-        if ( $options && $options['badwords'] === 'no' ) {
+        if ( ! isset( $options ) || $options && $options['badwords'] === 'no' ) {
             return $result;
         }
 
         $words = $this->get_words();
+
+        $instance = WPCF7_ContactForm::get_current();
+        $words = apply_filters( 'exopite_anti_spam_bad_words', $words, $tag, $instance );
 
         if ( ! $words || empty( $words ) ) {
             return $result;
@@ -709,11 +759,13 @@ class Exopite_Anti_Spam_Public {
             return $result;
         }
 
-        $tag = new WPCF7_Shortcode( $tag );
+        $tag = new WPCF7_FormTag( $tag );
         $email = sanitize_text_field( trim( $_POST[ $tag->name ] ) );
+        $instance = WPCF7_ContactForm::get_current();
 
         if ( ! filter_var( $email, FILTER_VALIDATE_EMAIL ) ) {
             $result->invalidate( $tag, wpcf7_get_message( 'invalid_email' ) );
+            return $result;
         }
 
         $options = get_option( $this->plugin_name );
@@ -736,6 +788,8 @@ class Exopite_Anti_Spam_Public {
         $blacklisted_domains = preg_replace( '/\s+/', '', $list_of_block_domains );
         $blacklisted_domains = explode( ",", $blacklisted_domains );
 
+        $blacklisted_domains = apply_filters( 'exopite_anti_spam_blacklisted_domains', $blacklisted_domains, $tag, $result, $instance );
+
         $domain = explode( '@', $email );
         $domain = $domain[1];
 
@@ -750,6 +804,8 @@ class Exopite_Anti_Spam_Public {
 
         $blacklisted_emails  = preg_replace( '/\s+/', '', $list_of_block_emails );
         $blacklisted_emails  = explode( ",", $blacklisted_emails );
+
+        $blacklisted_emails = apply_filters( 'exopite_anti_spam_blacklisted_emails', $blacklisted_emails, $tag, $result, $instance );
 
         if ( in_array( $email, $blacklisted_emails ) ) {
 
@@ -771,7 +827,7 @@ class Exopite_Anti_Spam_Public {
         }
 
         $options = $this->get_cf7_meta();
-        if ( $options && $options['honeypot'] === 'no' ) {
+        if ( ! isset( $options ) || $options && $options['honeypot'] === 'no' ) {
             return $result;
         }
 
@@ -793,17 +849,21 @@ class Exopite_Anti_Spam_Public {
      * @link https://stackoverflow.com/questions/24987518/php-preg-match-all-search-and-replace/24987702#24987702
      */
     public function wpcf7_contact_form( $contact_form ){
-        if( is_admin() ) return;
+
+        if ( ( is_admin() && ! isset( $_POST['action'] ) ) || ( is_admin() && isset( $_POST['action'] ) && $_POST['action'] != 'eas_get_contact_form_7_ajax' ) ) {
+            return;
+        }
+
         $properties = $contact_form->get_properties();
         $form       = $properties['form'];
-        $cf7_meta   = get_post_meta( $contact_form->id );
+        $cf7_meta   = get_post_meta( $contact_form->id() );
         $options    = false;
         $ajaxload   = false;
         if ( isset( $cf7_meta['exopite-anti-spam'][0] ) ) {
             $options = maybe_unserialize( $cf7_meta['exopite-anti-spam'][0] );
         }
 
-        if ( ! isset( $options['honeypot'] ) || $options['honeypot'] === 'yes' ) {
+        if ( $options && $options['honeypot'] === 'yes' ) {
 
             $pattern = '/\[(.*?)?\](?:([^\[]+)?\[\/\])?/';
 
@@ -827,7 +887,8 @@ class Exopite_Anti_Spam_Public {
             $ajaxload = true;
         }
 
-        if ( ! isset( $options['timestamp'] ) || $options['timestamp'] === 'yes' ) {
+        if ( $options && $options['timestamp'] === 'yes' ) {
+
             $form .= '[eastimestamp eastimestamp]';
         }
 
@@ -835,6 +896,55 @@ class Exopite_Anti_Spam_Public {
 
         $properties['form']  = $form;
         $contact_form->set_properties( $properties );
+
+    }
+
+    public function get_contact_form_7_content( $cf7_id, $cf7_title ) {
+
+        return apply_filters( 'the_content', '[contact-form-7 id="' . $cf7_id . '" title="' . $cf7_title . '"]' );
+
+    }
+
+    public function get_contact_form_7_ajax() {
+
+        $cf7_id = intval( $_POST['cf7_id'] );
+        $cf7_title = esc_attr( $_POST['cf7_title'] );
+        echo $this->get_contact_form_7_content( $cf7_id, $cf7_title );
+        die();
+
+    }
+
+    public function contact_form_7_ajax( $atts ) {
+
+        $args = shortcode_atts(
+            array(
+                'id'   => '',
+                'title'   => '',
+                'method' => 'click' //click, lazyload
+            ),
+            $atts
+        );
+
+        if ( empty( $args['id'] ) ) {
+            die( 'ID can not be empty!' );
+        }
+
+        $ret = '<div class="eas-cf7-shortcode" ';
+        $ret .= 'data-id="' . intval( $args['id'] ) . '" ';
+        $ret .= 'data-title="' . esc_attr( $args['title'] ) . '" ';
+        $ret .= 'data-method="' . esc_attr( $args['method'] ) . '" ';
+        $ret .= 'data-ajax-url="' . admin_url('admin-ajax.php') . '"';
+        $ret .= '>';
+
+        if ( isset( $_POST ) && isset( $_POST['_wpcf7'] ) && $_POST['_wpcf7'] ==  intval( $args['id'] ) ) {
+            $ret .= $this->get_contact_form_7_content( intval( $args['id'] ), esc_attr( $args['title'] ) );
+                    } else {
+            $ret .= '<a href="#" class="eas-cf7-shortcode-load">Load Contact Form 7</a>';
+        }
+
+        $ret .= '</div>';
+
+        return $ret;
 
     }
 
