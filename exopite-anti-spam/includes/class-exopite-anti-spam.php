@@ -193,7 +193,6 @@ class Exopite_Anti_Spam {
 		$this->admin = new Exopite_Anti_Spam_Admin( $this->get_plugin_name(), $this->get_version(), $this->main );
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $this->admin, 'enqueue_styles' );
-		$this->loader->add_action( 'admin_enqueue_scripts', $this->admin, 'enqueue_scripts' );
 
         $this->loader->add_action( 'admin_init', $this->admin, 'check_dependencies' );
 
@@ -362,6 +361,10 @@ class Exopite_Anti_Spam {
         $this->loader->add_filter( 'wp_ajax_eap_reload_cf7_fields', $this->public, 'reload_cf7_fields_ajax' );
         $this->loader->add_filter( 'wp_ajax_nopriv_eap_reload_cf7_fields', $this->public, 'reload_cf7_fields_ajax' );
         $this->loader->add_filter( 'wpcf7_mail_sent', $this->public, 'wpcf7_mail_sent' );
+
+        $this->loader->add_shortcode( "contact-form-7-ajax", $this->public, "contact_form_7_ajax", $priority = 10, $accepted_args = 2 );
+        $this->loader->add_filter( "wp_ajax_eas_get_contact_form_7_ajax", $this->public, "get_contact_form_7_ajax" );
+        $this->loader->add_filter( "wp_ajax_nopriv_eas_get_contact_form_7_ajax", $this->public, "get_contact_form_7_ajax" );
 
 	}
 
