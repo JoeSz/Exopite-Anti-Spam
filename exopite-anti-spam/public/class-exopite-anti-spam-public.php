@@ -96,7 +96,7 @@ class Exopite_Anti_Spam_Public {
 	 */
 	public function enqueue_scripts() {
 
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/exopite-anti-spam-public.js', array( 'jquery' ), $this->version, false );
+		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/exopite-anti-spam-public.js', array( 'jquery' ), $this->version, true );
 
     }
 
@@ -185,10 +185,17 @@ class Exopite_Anti_Spam_Public {
 
         if ( ! $this->words ) {
 
-            $lines = file_get_contents( EXOPITE_ANTI_SPAM_PATH . '/lists/spamwords.txt' );
-            $list = explode( PHP_EOL, $lines );
-            // $list = preg_split( '/\r\n|\r|\n/', $lines );
-            $this->words = array_filter( $list );
+            $fn = EXOPITE_ANTI_SPAM_PATH . '/lists/spamwords.txt';
+
+            if ( file_exists( $fn ) ) {
+                $lines = file_get_contents( EXOPITE_ANTI_SPAM_PATH . '/lists/spamwords.txt' );
+                // $list = explode( PHP_EOL, $lines );
+                $list = preg_split( '/\r\n|\r|\n/', $lines );
+                $this->words = array_filter( $list );
+            } else {
+                file_put_contents( EXOPITE_ANTI_SPAM_PATH . '/logs/wpcf7_errors.txt', PHP_EOL . date( 'Y-m-d H:i:s' ) . ' - not exists: ' . $fn . PHP_EOL, FILE_APPEND );
+                return array();
+            }
 
         }
 
@@ -733,6 +740,8 @@ class Exopite_Anti_Spam_Public {
         $content = strtolower( $content );
         $content = preg_replace( '/\s+/', ' ', $content );
 
+        file_put_contents( EXOPITE_ANTI_SPAM_PATH . '/logs/wpcf7_checks.txt', PHP_EOL . date( 'Y-m-d H:i:s' ) . ' - ' . var_export( $words, true ) . PHP_EOL, FILE_APPEND );
+
         foreach ( $words as $word ) {
 
             /**
@@ -740,10 +749,9 @@ class Exopite_Anti_Spam_Public {
              * Not a substring.
              * @link https://stackoverflow.com/questions/4366730/how-do-i-check-if-a-string-contains-a-specific-word/4366744#4366744
              */
-            if( preg_match( "/\b{$word}\b/i", $content ) ) {
+            if( preg_match( "@\b" . $word . "\b@i", $content ) ) {
 
                 $result->invalidate( $tag, esc_attr__( "You are using some banned words.", 'exopite-anti-spam' ) );
-
                 return $result;
             }
 
