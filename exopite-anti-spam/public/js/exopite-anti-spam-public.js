@@ -62,6 +62,9 @@
             if ( wpcf7.cached ) {
                wpcf7.refill( $form );
             }
+
+            wpcf7cf.initForm($form);
+
             $form.exopiteAntiSpam();
 
             plugin.$element.trigger("easSetElementsAfter", [plugin, response]);
@@ -118,6 +121,7 @@
         this.settings = $.extend({}, defaults, options);
         this._defaults = defaults;
         this._name = pluginName;
+        this.movedOrPressed = false;
         this.init();
     }
 
@@ -134,6 +138,8 @@
 
             plugin.$exanspselAuth = this.$element.find('.exanspsel-auth');
             plugin.$timestamp = this.$element.find('.eastimestamp');
+            plugin.$acceptance = this.$element.find('.wpcf7-acceptance input[type="checkbox"]');
+            plugin.$acceptanceToken = this.$element.find('#easacceptance');
 
             plugin.bindEvents();
             plugin.ajaxLoad();
@@ -154,6 +160,18 @@
             plugin.$element.parents('.wpcf7').on('wpcf7invalid', function (e) {
                 plugin.getElements(false, true);
             });
+
+            plugin.$element.find('.wpcf7-acceptance').on('mousemove keypress', function (e) {
+                plugin.movedOrPressed = true;
+                plugin.$element.find('.wpcf7-acceptance').off('mousemove keypress');
+            });
+
+            plugin.$acceptance.on('click', function (e) {
+                if ($(this).is(":checked") && plugin.$acceptanceToken.val() == '' && plugin.movedOrPressed) {
+                    plugin.getAcceptanceToken();
+                }
+
+            });
         },
         destroy: function () {
             this.unbindEvents();
@@ -164,6 +182,54 @@
         },
         buildCache: function () {
             this.$element = $(this.element);
+        },
+        doAjax: function (dataJSON, callback) {
+            var plugin = this;
+            $.ajax({
+                cache: false,
+                type: "POST",
+                url: plugin.ajaxUrl,
+                data: dataJSON,
+                success: function (response) {
+                    callback(response, status, plugin)
+                },
+                error: function( xhr, status, error ) {
+                    console.log( 'Status: ' + xhr.status );
+                    console.log( 'Error: ' + xhr.responseText );
+                },
+            });
+        },
+        setAcceptanceToken: function (response, status, plugin) {
+            plugin.$acceptanceToken.val(response)
+            plugin.$acceptance.parents('.wpcf7-acceptance').removeClass('loading');
+        },
+        getAcceptanceToken: function (getTimestamp, getExanspsel) {
+            var plugin = this;
+            plugin.$acceptance.parents('.wpcf7-acceptance').addClass('loading');
+
+            var dataJSON = {
+                'action': 'eap_get_acceptance_token',
+            };
+
+            plugin.doAjax(dataJSON, plugin.setAcceptanceToken);
+        },
+        processElements: function (response, status, plugin) {
+            var data = {};
+            console.log('1: ' + response);
+            try {
+                data = JSON.parse(response);
+                console.log('2: ' + JSON.stringify(data));
+                // plugin.setElements( plugin, data );
+                if (typeof data.timestamp !== 'undefined') {
+                    plugin.$timestamp.val(data.timestamp);
+                }
+
+                if (typeof data.exanspsel !== 'undefined') {
+                    plugin.$element.find('.eas-image-selector-images').find('input:checkbox').prop('checked', false);
+                    plugin.$element.find('.exanspsel > .wpcf7-checkbox').html(data.exanspsel);
+                    plugin.$exanspselAuth = plugin.$element.find('.exanspsel-auth');
+                }
+            } catch (error) {}
         },
         getElements: function (getTimestamp, getExanspsel) {
             var plugin = this;
@@ -188,39 +254,10 @@
                 // 'nonce': 'nonce-key',
             };
 
-            $.ajax({
-                cache: false,
-                type: "POST",
-                url: plugin.ajaxUrl,
-                data: dataJSON,
-                success: function( response ){
-                    try {
-                        data = JSON.parse(response);
-                        plugin.setElements( plugin, data );
-                    } catch (error) {}
-                },
-                error: function( xhr, status, error ) {
-                    console.log( 'Status: ' + xhr.status );
-                    console.log( 'Error: ' + xhr.responseText );
-                },
-            });
+            plugin.doAjax(dataJSON, plugin.processElements);
 
             return data;
         },
-        setElements: function (plugin, data) {
-
-            if (typeof data.timestamp !== 'undefined') {
-                plugin.$timestamp.val(data.timestamp);
-            }
-
-            if (typeof data.exanspsel !== 'undefined') {
-                plugin.$element.find('.eas-image-selector-images').find('input:checkbox').prop('checked', false);
-                plugin.$element.find('.exanspsel > .wpcf7-checkbox').html(data.exanspsel);
-                plugin.$exanspselAuth = plugin.$element.find('.exanspsel-auth');
-            }
-
-        },
-
     });
 
     $.fn[pluginName] = function (options) {
@@ -242,7 +279,7 @@
         $('.eas-cf7-shortcode').exopiteAntiSpamAjax();
         $('.wpcf7-form').exopiteAntiSpam();
 
-        $('.eas-cf7-shortcode').on('easSetElementsAfter', function (event, plugin, response){;
+        $('.eas-cf7-shortcode').on('easSetElementsAfter', function (event, plugin, response){
             var TextOJB = dnd_cf7_uploader.drag_n_drop_upload;
             plugin.$element.find('.wpcf7-drag-n-drop-file').CodeDropz_Uploader({
                 'color'				:	'#fff',
@@ -268,6 +305,7 @@
                 }
             });
         });
+
 
     });
 
