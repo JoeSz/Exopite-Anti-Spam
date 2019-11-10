@@ -43,6 +43,7 @@ class Exopite_Anti_Spam_Activator {
             submit_user_id SMALLINT,
             cf7_id SMALLINT,
             token VARCHAR(64),
+            type enum('acceptance', 'sent') DEFAULT NULL,
             PRIMARY KEY  (id)
         ) $charset_collate;";
 
