@@ -173,9 +173,7 @@ class Exopite_Anti_Spam_Public {
         $elapsed_seconds = ( time() - $time );
 
         if ( $elapsed_seconds < $this->min_time || $elapsed_seconds > ( $this->max_time ) ) {
-
             return false;
-
         }
 
         return true;
@@ -223,29 +221,86 @@ class Exopite_Anti_Spam_Public {
      * Database function
      */
 
-    public function save_token_db( $data ) {
+    public function save_token_db( $data, $type ) {
         global $wpdb;
-        $sql = 'INSERT INTO ' . $wpdb->prefix . 'eas_cf7_email_tokens ( `timestamp`, `submit_ip`, `submit_user_id`, `cf7_id`, `token` ) VALUES ( %s, %s, %d, %d, %s)';
-        $sql = $wpdb->prepare( $sql, $data['submit_time'], $data['submit_ip'], $data['submit_user_id'], $data['cf7_id'], $data['token'] );
+        $sql = 'INSERT INTO ' . $wpdb->prefix . 'eas_cf7_email_tokens ( `timestamp`, `submit_ip`, `submit_user_id`, `cf7_id`, `token`, `type` ) VALUES ( %s, %s, %d, %d, %s, %s)';
+        $sql = $wpdb->prepare( $sql, $data['submit_time'], $data['submit_ip'], $data['submit_user_id'], $data['cf7_id'], $data['token'], $type );
 
         return $wpdb->query( $sql );
     }
 
-    public function clean_up_tokens() {
+    public function clean_up_tokens( $type ) {
         global $wpdb;
-        return $wpdb->query( 'DELETE FROM ' . $wpdb->prefix . 'eas_cf7_email_tokens WHERE timestamp < DATE_SUB(NOW(), INTERVAL 31 DAY)' );
+
+        $elapsed = '';
+        switch ( $type ) {
+            case 'acceptance':
+                $elapsed = '30 MINUTE';
+                break;
+            case 'sent':
+                $elapsed = '31 DAY';
+                break;
+
+        }
+
+        return $wpdb->query( 'DELETE FROM ' . $wpdb->prefix . "eas_cf7_email_tokens WHERE `timestamp` < DATE_SUB(NOW(), INTERVAL " . $elapsed . ") AND `type` = '" . $type . "';" );
     }
 
-    public function check_token( $token ) {
+    public function check_token( $token, $type ) {
         global $wpdb;
 
-        $sql = "SELECT COUNT(token) AS token FROM `" . $wpdb->prefix . "eas_cf7_email_tokens` WHERE token = %s LIMIT 1";
-        $sql = $wpdb->prepare( $sql, $token );
+        $sql = "SELECT COUNT(token) AS token FROM `" . $wpdb->prefix . "eas_cf7_email_tokens` WHERE token = %s AND `type` = %s LIMIT 1";
+        $sql = $wpdb->prepare( $sql, $token, $type );
         $results = $wpdb->get_results( $sql, ARRAY_A );
 
         $token_valid = ! ( $results[0]['token'] == 0 );
 
         return $token_valid;
+    }
+
+
+    public function get_acceptance_token() {
+
+        $token_random = bin2hex( random_bytes( 32 ) );
+        $submit_ip = (isset($_SERVER['X_FORWARDED_FOR'])) ? $_SERVER['X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
+        $submit_time = time();
+        // $submit_time = date_i18n('Y-m-d H:i:s');
+        $token_acceptance = json_encode( array( $token_random, $submit_ip, $submit_time ) );
+
+        $token_acceptance = bin2hex( $this->crypter->encrypt( $token_acceptance, $this->get_token() ) );
+
+        /**
+         * Could save random token to db.
+         * But why make a db requests.
+         *
+         * - generate token
+         * - add to datebase
+         * - clean up old entries in db (older then 30 min)
+         */
+        // //time
+        // $posted_data['submit_time'] = date_i18n('Y-m-d H:i:s');
+        // // $posted_data['submit_time'] = date_i18n('Y-m-d H:i:s', $submission->get_meta('eastimestamp'));
+        // //ip
+        // $posted_data['submit_ip'] = (isset($_SERVER['X_FORWARDED_FOR'])) ? $_SERVER['X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
+        // //user id
+        // $posted_data['submit_user_id'] = 0;
+        // if (function_exists('is_user_logged_in') && is_user_logged_in()) {
+        //     $current_user = wp_get_current_user(); // WP_User
+        //     $posted_data['submit_user_id'] = $current_user->ID;
+        // }
+        // $posted_data['cf7_id'] = 0;
+        // $posted_data['token'] = $token_acceptance;
+        // $this->save_token_db( $posted_data, 'acceptance' );
+        // $this->clean_up_tokens( 'acceptance' );
+
+        /**
+         * Could use transient, but why make a db requests.
+         */
+        // set_transient( 'esc_token_acceptance_set_transient', $token_acceptance, DAY_IN_SECONDS );
+
+        echo $token_acceptance;
+
+        die();
     }
 
     /**
@@ -279,7 +334,6 @@ class Exopite_Anti_Spam_Public {
 
         //time
         $posted_data['submit_time'] = date_i18n('Y-m-d H:i:s');
-        // $posted_data['submit_time'] = date_i18n('Y-m-d H:i:s', $submission->get_meta('eastimestamp'));
         //ip
         $posted_data['submit_ip'] = (isset($_SERVER['X_FORWARDED_FOR'])) ? $_SERVER['X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
         //user id
@@ -292,13 +346,13 @@ class Exopite_Anti_Spam_Public {
         $posted_data['cf7_id'] = $contact_form->id();
         $posted_data['token'] = $this->token;
 
-        $this->save_token_db( $posted_data );
+        $this->save_token_db( $posted_data, 'sent' );
 
         /**
          * Clean up.
          * Delete all tokens which older then 1 month.
          */
-        $this->clean_up_tokens();
+        $this->clean_up_tokens( 'sent' );
 
     }
 
@@ -429,6 +483,7 @@ class Exopite_Anti_Spam_Public {
 
     }
 
+
     /**
      * Create fields.
      */
@@ -438,6 +493,38 @@ class Exopite_Anti_Spam_Public {
         wpcf7_add_form_tag( array( $this->main->honeypot_name ), array( $this, 'wpcf7_honeypot_form_tag_handler' ), array( 'name-attr' => true ) );
         wpcf7_add_form_tag( array( 'eastimestamp' ), array( $this, 'wpcf7_timestamp_form_tag_handler' ), array( 'name-attr' => true ) );
         wpcf7_add_form_tag( array( 'easimagecaptcha' ), array( $this, 'wpcf7_image_captcha_form_tag_handler' ), array( 'name-attr' => true ) );
+        wpcf7_add_form_tag( array( 'easacceptance' ), array( $this, 'wpcf7_easacceptance_form_tag_handler' ), array( 'name-attr' => true ) );
+
+    }
+
+    public function wpcf7_easacceptance_form_tag_handler( $tag ) {
+
+        $acceptance_ajaxcheck = false;
+        $options = $this->get_cf7_meta();
+        if ( $options && $options['acceptance_ajaxcheck'] === 'yes' ) {
+            $acceptance_ajaxcheck = true;
+        }
+
+        $instance = WPCF7_ContactForm::get_current();
+        $acceptance_ajaxcheck = apply_filters( 'exopite_anti_spam_easacceptance', $acceptance_ajaxcheck, $tag, $instance );
+
+        if ( ! $acceptance_ajaxcheck ) {
+            return '';
+        }
+
+        $atts          = array();
+        $atts['name']  = 'easacceptance';
+        $atts['id'] = 'easacceptance';
+        // $atts['type']  = 'text';
+        $atts['type']  = 'hidden';
+        $atts['value'] = '';
+        $atts['autocomplete'] = 'off';
+        $atts['tabindex'] = '-1';
+        $atts = wpcf7_format_atts( $atts );
+
+        $html = sprintf( '<input %1$s  />', $atts );
+
+        return $html;
 
     }
 
@@ -567,6 +654,53 @@ class Exopite_Anti_Spam_Public {
 
     }
 
+    public function validate_easacceptance( $result, $tag ) {
+
+        if ( $this->is_user_logged_in() ) {
+            return $result;
+        }
+
+        $tag = new WPCF7_FormTag( $tag );
+
+        if ( empty( $_POST['easacceptance'] ) ) {
+            return $this->mark_as_spam( $result, 'acceptance ajax auth empty' );
+        }
+
+        $token_acceptance = $this->crypter->decrypt( hex2bin( $_POST['easacceptance'] ), $this->get_token() );
+
+        if ( ! $token_acceptance ) {
+            return $this->mark_as_spam( $result, 'acceptance data can not decrypt' );
+        }
+
+        $token_acceptance = json_decode( $token_acceptance );
+        $submit_ip = (isset($_SERVER['X_FORWARDED_FOR'])) ? $_SERVER['X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
+
+        if ( ! $this->check_elapsed( $token_acceptance[2] ) ) {
+
+            $elapsed_seconds = ( time() - $token_acceptance[2] );
+
+            if ( $elapsed_seconds > ( $this->max_time ) ) {
+
+                $tag->name = $name;
+                $result->invalidate( $tag, esc_attr__( 'Timeout.', 'exopite-anti-spam' ) );
+                $this->timeout = true;
+
+            }
+
+            if ( $elapsed_seconds < $this->min_time ) {
+                return $this->mark_as_spam( $result, 'acceptance token timestamp is smaller then ' . $this->min_time . ' sec' );
+            }
+
+        }
+
+        if ( $token_acceptance[1] != $submit_ip ) {
+            return $this->mark_as_spam( $result, 'acceptance IP mismatch ' . $submit_ip . ' != ' . $token_acceptance[1] );
+        }
+
+        return $result;
+
+    }
+
     public function validate_easimagecaptcha( $result, $tag ) {
 
         if ( $this->is_user_logged_in() ) {
@@ -669,7 +803,7 @@ class Exopite_Anti_Spam_Public {
 
         }
 
-        if ( $this->check_token( $this->token ) ) {
+        if ( $this->check_token( $this->token, 'sent' ) ) {
 
             return $this->mark_as_spam( $result, 'token already exist' );
 
@@ -740,8 +874,6 @@ class Exopite_Anti_Spam_Public {
         $content = strtolower( $content );
         $content = preg_replace( '/\s+/', ' ', $content );
 
-        file_put_contents( EXOPITE_ANTI_SPAM_PATH . '/logs/wpcf7_checks.txt', PHP_EOL . date( 'Y-m-d H:i:s' ) . ' - ' . var_export( $words, true ) . PHP_EOL, FILE_APPEND );
-
         foreach ( $words as $word ) {
 
             /**
@@ -749,9 +881,10 @@ class Exopite_Anti_Spam_Public {
              * Not a substring.
              * @link https://stackoverflow.com/questions/4366730/how-do-i-check-if-a-string-contains-a-specific-word/4366744#4366744
              */
-            if( preg_match( "@\b" . $word . "\b@i", $content ) ) {
+            if( preg_match( "/\b{$word}\b/i", $content ) ) {
 
                 $result->invalidate( $tag, esc_attr__( "You are using some banned words.", 'exopite-anti-spam' ) );
+
                 return $result;
             }
 
@@ -871,7 +1004,7 @@ class Exopite_Anti_Spam_Public {
             $options = maybe_unserialize( $cf7_meta['exopite-anti-spam'][0] );
         }
 
-        if ( $options && $options['honeypot'] === 'yes' ) {
+        if ( $options && isset( $options['honeypot'] ) && $options['honeypot'] === 'yes' ) {
 
             $pattern = '/\[(.*?)?\](?:([^\[]+)?\[\/\])?/';
 
@@ -891,13 +1024,18 @@ class Exopite_Anti_Spam_Public {
 
         }
 
-        if ( $options && $options['ajaxload'] === 'yes' ) {
+        if ( $options && isset( $options['ajaxload'] ) && $options['ajaxload'] === 'yes' ) {
             $ajaxload = true;
         }
 
-        if ( $options && $options['timestamp'] === 'yes' ) {
+        if ( $options && isset( $options['timestamp'] ) && $options['timestamp'] === 'yes' ) {
 
             $form .= '[eastimestamp eastimestamp]';
+        }
+
+        if ( $options && isset( $options['acceptance_ajaxcheck'] ) && $options['acceptance_ajaxcheck'] === 'yes' ) {
+
+            $form .= '[easacceptance easacceptance]';
         }
 
         $form .= '<div class="eas-ajax-url" data-ajax-load="' . $ajaxload . '" data-ajax-url="' . admin_url( 'admin-ajax.php' ) . '"></div>';
