@@ -209,12 +209,31 @@ class Exopite_Anti_Spam_Admin {
         echo '<div class="eas-row-title">' . esc_attr( 'AJAX loading', 'exopite-anti-spam' ) . '</div>';
 
         echo '<div class="eas-row-desc">' . esc_attr(
-            'Load image captcha and timestamp field with ajax, prevent to be cached by caching plugins. If visitor has javascript diabled, she or he will not able to send any emails with the form.'
+            'Load image captcha and timestamp field with ajax, prevent to be cached by caching plugins. If visitor has javascript diasbled, she or he will not able to send any emails form the form.'
             , 'exopite-anti-spam' ) . '</div>';
 
         echo '<label for="eas-activate-ajaxload">';
         echo '<input id="eas-activate-ajaxload" class="eas-switch" type="checkbox" name="eas-activate-ajaxload" value="yes"' . $checked . '>';
         echo ' ' . esc_html__( 'Load via AJAX', 'exopite-anti-spam' ) . '</label>';
+
+        echo '</div>';
+
+        $checked = '';
+        if ( isset( $options[0]['acceptance_ajaxcheck'] ) && $options[0]['acceptance_ajaxcheck'] == 'yes' ) {
+            $checked = ' checked="checked"';
+        }
+
+        echo '<div class="eas-row">';
+
+        echo '<div class="eas-row-title">' . esc_attr( 'Acceptance Javascript bot detection', 'exopite-anti-spam' ) . '</div>';
+
+        echo '<div class="eas-row-desc">' . esc_attr(
+            sprintf( 'On Acceptance click, the plugin will request a token via AJAX to check if the user is a bot or a human.  If visitor has javascript diasbled, she or he will not able to send any emails form the form. The %s field is required for this function!', '<code>[acceptance]</code>' )
+            , 'exopite-anti-spam' ) . '</div>';
+
+        echo '<label for="eas-acceptance-ajaxcheck">';
+        echo '<input id="eas-acceptance-ajaxcheck" class="eas-switch" type="checkbox" name="eas-acceptance-ajaxcheck" value="yes"' . $checked . '>';
+        echo ' ' . esc_html__( 'Check acceptance via AJAX', 'exopite-anti-spam' ) . '</label>';
 
         echo '</div>';
 
@@ -265,11 +284,18 @@ class Exopite_Anti_Spam_Admin {
             $ajaxload = 'no';
         }
 
+        if ( isset( $_POST['eas-acceptance-ajaxcheck'] ) ) {
+            $acceptance_ajaxcheck = 'yes';
+        } else {
+            $acceptance_ajaxcheck = 'no';
+        }
+
         $anti_spam_options = array(
             'timestamp' => $timestamp,
             'honeypot' => $honeypot,
             'badwords' => $badwords,
             'ajaxload' => $ajaxload,
+            'acceptance_ajaxcheck' => $acceptance_ajaxcheck,
         );
 
         update_post_meta( $post_id, 'exopite-anti-spam', $anti_spam_options );
