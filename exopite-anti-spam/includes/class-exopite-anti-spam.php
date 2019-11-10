@@ -158,7 +158,7 @@ class Exopite_Anti_Spam {
 
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-crytper.php';
 
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-ip-address.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-ip-address.php';
 
 		$this->loader = new Exopite_Anti_Spam_Loader();
 
@@ -357,9 +357,14 @@ class Exopite_Anti_Spam {
         $this->loader->add_filter( 'wpcf7_validate_email', $this->public, 'validate_text_email_blacklist', 20, 2 );
         $this->loader->add_filter( 'wpcf7_validate_email*', $this->public, 'validate_text_email_blacklist', 20, 2 );
         $this->loader->add_filter( 'wpcf7_validate_easimagecaptcha', $this->public, 'validate_easimagecaptcha', 20, 2 );
+        $this->loader->add_filter( 'wpcf7_validate_easacceptance', $this->public, 'validate_easacceptance', 20, 2 );
 
         $this->loader->add_filter( 'wp_ajax_eap_reload_cf7_fields', $this->public, 'reload_cf7_fields_ajax' );
         $this->loader->add_filter( 'wp_ajax_nopriv_eap_reload_cf7_fields', $this->public, 'reload_cf7_fields_ajax' );
+
+        $this->loader->add_filter( 'wp_ajax_eap_get_acceptance_token', $this->public, 'get_acceptance_token' );
+        $this->loader->add_filter( 'wp_ajax_nopriv_eap_get_acceptance_token', $this->public, 'get_acceptance_token' );
+
         $this->loader->add_filter( 'wpcf7_mail_sent', $this->public, 'wpcf7_mail_sent' );
 
         $this->loader->add_shortcode( "contact-form-7-ajax", $this->public, "contact_form_7_ajax", $priority = 10, $accepted_args = 2 );
