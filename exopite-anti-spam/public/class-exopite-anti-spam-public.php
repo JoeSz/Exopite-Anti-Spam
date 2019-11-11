@@ -243,7 +243,9 @@ class Exopite_Anti_Spam_Public {
 
         }
 
-        return $wpdb->query( 'DELETE FROM ' . $wpdb->prefix . "eas_cf7_email_tokens WHERE `timestamp` < DATE_SUB(NOW(), INTERVAL " . $elapsed . ") AND `type` = '" . $type . "';" );
+        $sql = 'DELETE FROM ' . $wpdb->prefix . "eas_cf7_email_tokens WHERE `timestamp` < DATE_SUB(NOW(), INTERVAL %s) AND `type` = %s;";
+        $sql = $wpdb->prepare( $sql, $elapsed, $type );
+        return $wpdb->query( $sql );
     }
 
     public function check_token( $token, $type ) {
