@@ -84,6 +84,7 @@ The plugin allows you to filter certain email addresses and domains.
 ## Screenshot
 
 ![](exopite-anti-spam/assets/screenshot-1.jpg)
+![](exopite-anti-spam/assets/screenshot-2.jpg)
 
 ## Installation
 
