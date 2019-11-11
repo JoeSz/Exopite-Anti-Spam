@@ -522,7 +522,7 @@ class Exopite_Anti_Spam_Public {
         $atts['tabindex'] = '-1';
         $atts = wpcf7_format_atts( $atts );
 
-        $html = sprintf( '<input %1$s  />', $atts );
+        $html = sprintf( '<input %1$s  /><noscript style="color:red;text-align:center;display:block;font-weight:bold;line-height:1.2;padding:15px 0;">This contact form will not function without javascript enabled. Please enable javascript on your browser.</noscript>', $atts );
 
         return $html;
 
