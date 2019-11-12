@@ -131,5 +131,8 @@ I've always tested my codes very hard, but it's impossible to test all possible 
 
 ## DISCLAMER
 
-NO WARRANTY OF ANY KIND! USE THIS SOFTWARES AND INFORMATIONS AT YOUR OWN RISK! READ DISCLAMER.TXT! https://www.joeszalai.org/disclaimer/ <br />
+NO WARRANTY OF ANY KIND! USE THIS SOFTWARES AND INFORMATIONS AT YOUR OWN RISK!
+[READ DISCLAMER!](https://joe.szalai.org/disclaimer/)
 License: GNU General Public License v3
+
+[![forthebadge](http://forthebadge.com/images/badges/built-by-developers.svg)](http://forthebadge.com) [![forthebadge](http://forthebadge.com/images/badges/for-you.svg)](http://forthebadge.com)
