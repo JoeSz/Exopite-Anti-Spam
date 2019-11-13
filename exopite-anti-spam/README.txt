@@ -3,7 +3,7 @@ Contributors: JoeSz
 Donate link: https://www.joeszalai.org
 Tags: comments, spam
 Requires at least: 4.7
-Tested up to: 5.2.4
+Tested up to: 5.3
 Requires PHP: 7.0
 Stable tag: 4.7
 License: GPLv2 or later
