@@ -28,6 +28,9 @@
 .eas-image-selector label > input:focus + svg {
     border: 1px dotted #cacaca;
 }
+.eas-image-selector label > input:checked + svg path {
+    fill: #8AAF38;
+}
 .eas-image-selector label > input:checked + svg {
     color: #8AAF38;
 }
