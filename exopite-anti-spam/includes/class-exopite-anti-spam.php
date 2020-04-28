@@ -190,6 +190,10 @@ class Exopite_Anti_Spam {
 	 */
 	private function define_admin_hooks() {
 
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
 		$this->admin = new Exopite_Anti_Spam_Admin( $this->get_plugin_name(), $this->get_version(), $this->main );
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $this->admin, 'enqueue_styles' );

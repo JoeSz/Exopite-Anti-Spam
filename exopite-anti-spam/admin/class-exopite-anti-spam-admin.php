@@ -252,6 +252,10 @@ class Exopite_Anti_Spam_Admin {
 
     public function wpcf7_save_contact_form( $form ) {
 
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
         if ( ! isset( $_POST ) || empty( $_POST ) ) {
             return;
         }
