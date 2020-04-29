@@ -326,8 +326,11 @@ class Exopite_Anti_Spam_Admin {
          *
          * @link https://codex.wordpress.org/Function_Reference/add_options_page
          */
+        if ( current_user_can( 'manage_options' ) ) {
+            add_submenu_page('wpcf7', 'Exopite Anti Spam - Blacklist Unwanted Emails - Options', 'Blacklist', 'manage_options', $this->plugin_name, array($this, 'display_plugin_setup_page'));
 
-		add_submenu_page( 'wpcf7', 'Exopite Anti Spam - Blacklist Unwanted Emails - Options', 'Blacklist', 'manage_options', $this->plugin_name, array($this, 'display_plugin_setup_page') );
+        }
+
 
     }
 
@@ -380,9 +383,12 @@ class Exopite_Anti_Spam_Admin {
 
     public function options_update() {
 
-        register_setting( $this->plugin_name, $this->plugin_name, array(
-           'sanitize_callback' => array( $this, 'validate' ),
-        ) );
+        if ( current_user_can( 'manage_options' ) ) {
+            register_setting( $this->plugin_name, $this->plugin_name, array(
+               'sanitize_callback' => array( $this, 'validate' ),
+            ) );
+        }
+
 
     }
 
