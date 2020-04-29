@@ -215,11 +215,8 @@
         },
         processElements: function (response, status, plugin) {
             var data = {};
-            console.log('1: ' + response);
             try {
                 data = JSON.parse(response);
-                console.log('2: ' + JSON.stringify(data));
-                // plugin.setElements( plugin, data );
                 if (typeof data.timestamp !== 'undefined') {
                     plugin.$timestamp.val(data.timestamp);
                 }
