@@ -255,6 +255,10 @@ class Exopite_Anti_Spam_Public {
         $sql = $wpdb->prepare( $sql, $token, $type );
         $results = $wpdb->get_results( $sql, ARRAY_A );
 
+        if ( ! isset( $results[0] ) || ! isset( $results[0]['token'] ) ) {
+            return false;
+        }
+
         $token_valid = ! ( $results[0]['token'] == 0 );
 
         return $token_valid;
@@ -1086,7 +1090,7 @@ class Exopite_Anti_Spam_Public {
 
         if ( isset( $_POST ) && isset( $_POST['_wpcf7'] ) && $_POST['_wpcf7'] ==  intval( $args['id'] ) ) {
             $ret .= $this->get_contact_form_7_content( intval( $args['id'] ), esc_attr( $args['title'] ) );
-        } else {
+                    } else {
             $ret .= '<a href="#" class="eas-cf7-shortcode-load">Load Contact Form 7</a>';
         }
 
