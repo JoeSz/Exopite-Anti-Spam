@@ -202,7 +202,8 @@ class Exopite_Anti_Spam_Public {
 
     public function generate_image_captcha_title( $seleted_titles ) {
 
-        return strtolower( implode( ' ' . esc_attr__( 'and', 'exopite-anti-spam' ) . ' ', $seleted_titles ) );
+        return implode( ' ' . esc_attr__( 'and', 'exopite-anti-spam' ) . ' ', $seleted_titles );
+        // return strtolower( implode( ' ' . esc_attr__( 'and', 'exopite-anti-spam' ) . ' ', $seleted_titles ) );
 
     }
 
