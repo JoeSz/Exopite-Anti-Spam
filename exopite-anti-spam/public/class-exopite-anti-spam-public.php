@@ -136,6 +136,17 @@ class Exopite_Anti_Spam_Public {
         return $spam;
     }
 
+    public function log( $infos, $log_name ) {
+
+        if ( ! empty( $infos ) ) {
+
+            $ip_address = new RemoteAddress();
+
+            file_put_contents( EXOPITE_ANTI_SPAM_PATH . '/logs/anti-spam' . $log_name . date( '_Y-m-d' ) . '.txt', PHP_EOL . date( 'Y-m-d H:i:s' ) . ' - ' . $ip_address->getIpAddress() .  PHP_EOL . var_export( $infos, true ) . PHP_EOL, FILE_APPEND );
+        }
+
+    }
+
     public function mark_as_spam( $result, $reason = '' ) {
 
         $this->spam = true;
@@ -244,8 +255,8 @@ class Exopite_Anti_Spam_Public {
 
         }
 
-        $sql = 'DELETE FROM ' . $wpdb->prefix . "eas_cf7_email_tokens WHERE `timestamp` < DATE_SUB(NOW(), INTERVAL %s) AND `type` = %s;";
-        $sql = $wpdb->prepare( $sql, $elapsed, $type );
+        $sql = 'DELETE FROM ' . $wpdb->prefix . "eas_cf7_email_tokens WHERE `timestamp` < DATE_SUB(NOW(), INTERVAL " . $elapsed . ") AND `type` = %s;";
+        $sql = $wpdb->prepare( $sql, $type );
         return $wpdb->query( $sql );
     }
 
