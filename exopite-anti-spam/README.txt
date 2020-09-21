@@ -104,6 +104,10 @@ The plugin allows you to filter certain email addresses and domains.
 
 == Changelog ==
 
+= 20200921 =
+* Fix: "WordPress database error You have an error in your SQL syntax;"
+* Remove: add_filter( 'wpcf7_verify_nonce', '__return_true' )
+
 = 20191111 =
 * Add Plugin Update Checker 4.8
 
