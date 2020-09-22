@@ -341,7 +341,7 @@ class Exopite_Anti_Spam {
 		$this->loader->add_action( 'wp_enqueue_scripts', $this->public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $this->public, 'enqueue_scripts' );
 
-        add_filter( 'wpcf7_verify_nonce', '__return_true' );
+        // add_filter( 'wpcf7_verify_nonce', '__return_true' );
 
         $this->loader->add_filter( 'wpcf7_init', $this->public, 'wpcf7_init', 10, 0 );
 
