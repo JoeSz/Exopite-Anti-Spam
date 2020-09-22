@@ -769,7 +769,9 @@ class Exopite_Anti_Spam_Public {
 
             if ( $elapsed_seconds > ( $this->max_time ) ) {
 
-                $tag->name = $name;
+                if ( isset( $tag->name ) ) {
+                    $tag->name = $name;
+                }
                 $result->invalidate( $tag, esc_attr__( 'Timeout.', 'exopite-anti-spam' ) );
                 $this->timeout = true;
 
