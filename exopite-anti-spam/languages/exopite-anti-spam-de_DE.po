@@ -8,12 +8,12 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-07-21 12:38+0200\n"
-"PO-Revision-Date: 2020-07-22 08:18+0200\n"
+"PO-Revision-Date: 2020-10-21 06:21+0200\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 2.0.4\n"
+"X-Generator: Poedit 1.8.8\n"
 "Last-Translator: \n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "Language: de_DE\n"
@@ -248,7 +248,7 @@ msgstr "die Wolke"
 
 #: includes/class-exopite-anti-spam-icons.php:80
 msgid "the coffee"
-msgstr "den Kaffee"
+msgstr "den Kaffeebecher"
 
 #: includes/class-exopite-anti-spam-icons.php:82
 msgid "the cog"
@@ -445,7 +445,7 @@ msgstr "Bitte treffen Sie Ihre Auswahl."
 #: public/class-exopite-anti-spam-public.php:731
 #: public/class-exopite-anti-spam-public.php:775
 msgid "Please select the correct icon(s)."
-msgstr "Bitte wählen Sie die richtige(n) Icon(s) aus."
+msgstr "Bitte wählen Sie die richtigen Symbole."
 
 #: public/class-exopite-anti-spam-public.php:892
 msgid "You are using some banned words."
