@@ -3,7 +3,7 @@ Contributors: JoeSz
 Donate link: https://www.joeszalai.org
 Tags: comments, spam
 Requires at least: 4.7
-Tested up to: 5.3
+Tested up to: 5.5.3
 Requires PHP: 7.0
 Stable tag: 4.7
 License: GPLv2 or later
@@ -103,6 +103,9 @@ The plugin allows you to filter certain email addresses and domains.
 2. Screenshot frontend
 
 == Changelog ==
+
+= 20201127 =
+* Fix: The image captcha creates a PHP error if only one icon needs to be selected.
 
 = 20200921 =
 * Fix: "WordPress database error You have an error in your SQL syntax;"

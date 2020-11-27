@@ -107,6 +107,9 @@ Server
 
 ## CHANGELOG
 
+= 20201127 =
+* Fix: The image captcha creates a PHP error if only one icon needs to be selected.
+
 = 20200921 =
 * Fix: "WordPress database error You have an error in your SQL syntax;"
 * Remove: add_filter( 'wpcf7_verify_nonce', '__return_true' )
