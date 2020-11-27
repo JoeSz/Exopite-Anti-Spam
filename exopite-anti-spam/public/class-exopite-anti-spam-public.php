@@ -440,7 +440,7 @@ class Exopite_Anti_Spam_Public {
         $icons = new Exopite_Anti_Spam_Icons();
         $choices = $icons->get_icons( $icons_amount );
 
-        $human = rand( 0, ( count( $choices ) - 1 ) );
+        // $human = rand( 0, ( count( $choices ) - 1 ) );
 
         $keys = array_keys( $choices );
 
@@ -455,8 +455,18 @@ class Exopite_Anti_Spam_Public {
         $selected_keys_encrypted = bin2hex( $this->crypter->encrypt( $to_encrypt, $this->get_token() ) );
 
         $seleted_titles = array();
-        foreach ( $selcted_keys as $item ) {
-            $seleted_titles[] = $keys[$item];
+
+        /**
+         * array_rand does not return array, if selected_amount is 1.
+         */
+        if ( is_array( $selcted_keys ) ) {
+
+            foreach ( $selcted_keys as $item ) {
+                $seleted_titles[] = $keys[$item];
+            }
+
+        } else {
+            $seleted_titles[] = $keys[$selcted_keys];
         }
 
         $output = '<span class="eas-image-selector"><span class="eas-image-selector-title">';
@@ -639,11 +649,15 @@ class Exopite_Anti_Spam_Public {
 
         $icons_amount = $tag->get_option( 'icon', 'int', true );
         if ( ! $icons_amount ) $icons_amount = 5;
+        if ( $icons_amount < 2 ) $icons_amount = 2;
+        if ( $icons_amount > 10 ) $icons_amount = 10;
 
         $icons_amount = apply_filters( 'exopite_anti_spam_icons_amount', $icons_amount, $tag, $instance );
 
         $selected_amount = $tag->get_option( 'choose', 'int', true );
         if ( ! $selected_amount ) $selected_amount = 2;
+        if ( $selected_amount >= $icons_amount ) $selected_amount = ( $icons_amount - 1 );
+        if ( $selected_amount < 1 ) $selected_amount = 1;
 
         $selected_amount = apply_filters( 'exopite_anti_spam_selected_amount', $selected_amount, $tag, $instance );
 
