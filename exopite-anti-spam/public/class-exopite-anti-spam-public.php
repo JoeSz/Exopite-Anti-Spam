@@ -781,6 +781,11 @@ class Exopite_Anti_Spam_Public {
         $image_captcha_time = $image_captcha_data[1];
         $image_captcha_selected = json_decode( $image_captcha_data[2] );
 
+        /**
+         * Do not check timestamp for image captcha,
+         * use "Timestamp" to check elapsed time.
+         */
+        /*
         if ( ! $this->check_elapsed( $image_captcha_time ) ) {
 
             $elapsed_seconds = ( time() - $image_captcha_time );
@@ -806,6 +811,7 @@ class Exopite_Anti_Spam_Public {
             }
 
         }
+        */
 
         if ( $image_captcha_selected && ! $this->array_equal( $image_captcha_selected, $selected ) ) {
 
