@@ -720,6 +720,10 @@ class Exopite_Anti_Spam_Public {
             }
 
             if ( $elapsed_seconds < $this->min_time ) {
+
+                $tag->name = $name;
+                $result->invalidate( $tag, esc_attr__( 'Timestamp error!', 'exopite-anti-spam' ) );
+
                 return $this->mark_as_spam( $result, 'acceptance token timestamp is smaller then ' . $this->min_time . ' sec' );
             }
 
@@ -792,6 +796,12 @@ class Exopite_Anti_Spam_Public {
             }
 
             if ( $elapsed_seconds < $this->min_time ) {
+
+                if ( isset( $tag->name ) ) {
+                    $tag->name = $name;
+                }
+                $result->invalidate( $tag, esc_attr__( 'Timestamp error!', 'exopite-anti-spam' ) );
+
                 return $this->mark_as_spam( $result, 'captcha timestamp is smaller then ' . $this->min_time . ' sec' );
             }
 
@@ -856,6 +866,10 @@ class Exopite_Anti_Spam_Public {
             }
 
             if ( $elapsed_seconds < $this->min_time ) {
+
+                $tag->name = $name;
+                $result->invalidate( $tag, esc_attr__( 'Timestamp error!', 'exopite-anti-spam' ) );
+
                 return $this->mark_as_spam( $result, 'timestamp is smaller then ' . $this->min_time . ' sec' );
             }
 
