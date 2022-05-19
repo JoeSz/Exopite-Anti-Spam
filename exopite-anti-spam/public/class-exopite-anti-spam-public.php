@@ -154,9 +154,11 @@ class Exopite_Anti_Spam_Public {
 
         $ip_address = new RemoteAddress();
 
-        if ( ! empty( $reason ) ) {
-            file_put_contents( EXOPITE_ANTI_SPAM_PATH . '/logs/wpcf7_validate_as_spam.txt', PHP_EOL . date( 'Y-m-d H:i:s' ) . ' - ' . $ip_address->getIpAddress() . ' - ' . $reason . PHP_EOL . var_export( $_POST, true ) . PHP_EOL, FILE_APPEND );
-        }
+        // if ( ! empty( $reason ) ) {
+        //     file_put_contents( EXOPITE_ANTI_SPAM_PATH . '/logs/wpcf7_validate_as_spam.txt', PHP_EOL . date( 'Y-m-d H:i:s' ) . ' - ' . $ip_address->getIpAddress() . ' - ' . $reason . PHP_EOL . var_export( $_POST, true ) . PHP_EOL, FILE_APPEND );
+        // }
+
+        file_put_contents( EXOPITE_ANTI_SPAM_PATH . '/logs/wpcf7_validate_as_spam.txt', PHP_EOL . date( 'Y-m-d H:i:s' ) . ' - ' . $ip_address->getIpAddress() . ' - ' . $reason . PHP_EOL . var_export( $_POST, true ) . PHP_EOL, FILE_APPEND );
 
         return $result;
 
@@ -695,12 +697,18 @@ class Exopite_Anti_Spam_Public {
         $tag = new WPCF7_FormTag( $tag );
 
         if ( empty( $_POST['easacceptance'] ) ) {
+
+            $result->invalidate( $tag, esc_attr__( "Validation errors occurred", 'contact-form-7' ) . ' (01)' );
+
             return $this->mark_as_spam( $result, 'acceptance ajax auth empty' );
         }
 
         $token_acceptance = $this->crypter->decrypt( hex2bin( $_POST['easacceptance'] ), $this->get_token() );
 
         if ( ! $token_acceptance ) {
+
+            $result->invalidate( $tag, esc_attr__( "Validation errors occurred", 'contact-form-7' ) . ' (02)' );
+
             return $this->mark_as_spam( $result, 'acceptance data can not decrypt' );
         }
 
@@ -730,6 +738,9 @@ class Exopite_Anti_Spam_Public {
         }
 
         if ( $token_acceptance[1] != $submit_ip ) {
+
+            $result->invalidate( $tag, esc_attr__( "Validation errors occurred", 'contact-form-7' ) . ' (03)' );
+
             return $this->mark_as_spam( $result, 'acceptance IP mismatch ' . $submit_ip . ' != ' . $token_acceptance[1] );
         }
 
@@ -749,10 +760,14 @@ class Exopite_Anti_Spam_Public {
 
             $tag->name = "exanspsel";
             $result->invalidate( $tag, esc_attr__( 'Please make your selection.', 'exopite-anti-spam' ) );
+            // $result->invalidate( $tag, wpcf7_get_message( 'quiz_answer_not_correct' ) );
 
         }
 
         if ( empty( $_POST['exanspsel-auth'] ) ) {
+
+            $result->invalidate( $tag, esc_attr__( "Validation errors occurred", 'contact-form-7' ) . ' (04)' );
+
             return $this->mark_as_spam( $result, 'captcha auth empty' );
         }
 
@@ -768,12 +783,18 @@ class Exopite_Anti_Spam_Public {
         $image_captcha_data_decrypted = $this->crypter->decrypt( hex2bin( $auth ), $this->get_token() );
 
         if ( ! $image_captcha_data_decrypted ) {
+
+            $result->invalidate( $tag, esc_attr__( "Validation errors occurred", 'contact-form-7' ) . ' (05)' );
+
             return $this->mark_as_spam( $result, 'captcha data can not decrypt' );
         }
 
         $image_captcha_data = explode( '|', $image_captcha_data_decrypted );
 
         if ( ! is_array( $image_captcha_data ) ) {
+
+            $result->invalidate( $tag, esc_attr__( "Validation errors occurred", 'contact-form-7' ) . ' (06)' );
+
             return $this->mark_as_spam( $result, 'captcha data is not an array' );
         }
 
@@ -817,10 +838,14 @@ class Exopite_Anti_Spam_Public {
 
             $tag->name = "exanspsel";
             $result->invalidate( $tag, esc_attr__( 'Please select the correct icon(s).', 'exopite-anti-spam' ) );
+            // $result->invalidate( $tag, wpcf7_get_message( 'quiz_answer_not_correct' ) );
 
         }
 
         if ( ! $image_captcha_selected ) {
+
+            $result->invalidate( $tag, esc_attr__( "Validation errors occurred", 'contact-form-7' ) . ' (07)' );
+
             return $this->mark_as_spam( $result, 'captcha selected is invalid' . PHP_EOL . $image_captcha_data );
         }
 
@@ -839,6 +864,8 @@ class Exopite_Anti_Spam_Public {
 
         if ( empty( $value ) ) {
 
+            $result->invalidate( $tag, esc_attr__( "Validation errors occurred", 'contact-form-7' ) . ' (08)' );
+
             return $this->mark_as_spam( $result, 'timestamp empty' );
 
         }
@@ -849,11 +876,15 @@ class Exopite_Anti_Spam_Public {
 
          if ( empty( $timestamp_decrypted ) ) {
 
+            $result->invalidate( $tag, esc_attr__( "Validation errors occurred", 'contact-form-7' ) . ' (09)' );
+
             return $this->mark_as_spam( $result, 'timestamp data is invalid' );
 
         }
 
         if ( $this->check_token( $this->token, 'sent' ) ) {
+
+            $result->invalidate( $tag, esc_attr__( "Validation errors occurred", 'contact-form-7' ) . ' (10)' );
 
             return $this->mark_as_spam( $result, 'token already exist' );
 
@@ -1030,6 +1061,9 @@ class Exopite_Anti_Spam_Public {
         $value = isset( $_POST[$name] ) ? esc_attr( $_POST[$name] )  : '';
 
         if ( ! empty( $value ) ) {
+
+            $result->invalidate( $tag, esc_attr__( "Validation errors occurred", 'contact-form-7' ) . ' (11)' );
+            // $result->invalidate( $tag, wpcf7_get_message( 'invalid_required' ) );
 
             return $this->mark_as_spam( $result, 'honeypot is not empty' );
 
