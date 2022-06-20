@@ -107,6 +107,9 @@ Server
 
 ## CHANGELOG
 
+= 20220620 =
+* Better error messages and logging.
+
 = 20201127 =
 * Fix: The image captcha creates a PHP error if only one icon needs to be selected.
 
@@ -122,7 +125,7 @@ Server
 
 ## LICENSE DETAILS
 
-The GPL license of Exopite Multifilter grants you the right to use, study, share (copy), modify and (re)distribute the software, as long as these license terms are retained.
+The GPL license of Exopite Antispam grants you the right to use, study, share (copy), modify and (re)distribute the software, as long as these license terms are retained.
 
 ## SUPPORT/UPDATES/CONTRIBUTIONS
 
