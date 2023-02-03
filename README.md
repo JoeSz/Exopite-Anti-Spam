@@ -107,6 +107,9 @@ Server
 
 ## CHANGELOG
 
+= 20230203 =
+* Compatibility update for CF7 7.3
+
 = 20220620 =
 * Better error messages and logging.
 
