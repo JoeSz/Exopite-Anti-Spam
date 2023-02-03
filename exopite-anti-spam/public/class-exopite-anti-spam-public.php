@@ -532,10 +532,19 @@ class Exopite_Anti_Spam_Public {
 
     public function wpcf7_init() {
 
-        wpcf7_add_form_tag( array( $this->main->honeypot_name ), array( $this, 'wpcf7_honeypot_form_tag_handler' ), array( 'name-attr' => true ) );
-        wpcf7_add_form_tag( array( 'eastimestamp' ), array( $this, 'wpcf7_timestamp_form_tag_handler' ), array( 'name-attr' => true ) );
-        wpcf7_add_form_tag( array( 'easimagecaptcha' ), array( $this, 'wpcf7_image_captcha_form_tag_handler' ), array( 'name-attr' => true ) );
-        wpcf7_add_form_tag( array( 'easacceptance' ), array( $this, 'wpcf7_easacceptance_form_tag_handler' ), array( 'name-attr' => true ) );
+        /**
+         * @link https://wordpress.org/support/topic/wpcf7_add_form_tag-function-not-working/
+         */
+
+        wpcf7_add_form_tag( array( $this->main->honeypot_name ), array( $this, 'wpcf7_honeypot_form_tag_handler' ) );
+        wpcf7_add_form_tag( array( 'eastimestamp' ), array( $this, 'wpcf7_timestamp_form_tag_handler' ) );
+        wpcf7_add_form_tag( array( 'easimagecaptcha' ), array( $this, 'wpcf7_image_captcha_form_tag_handler' ) );
+        wpcf7_add_form_tag( array( 'easacceptance' ), array( $this, 'wpcf7_easacceptance_form_tag_handler' ) );
+
+        // wpcf7_add_form_tag( array( $this->main->honeypot_name ), array( $this, 'wpcf7_honeypot_form_tag_handler' ), array( 'name-attr' => true ) );
+        // wpcf7_add_form_tag( array( 'eastimestamp' ), array( $this, 'wpcf7_timestamp_form_tag_handler' ), array( 'name-attr' => true ) );
+        // wpcf7_add_form_tag( array( 'easimagecaptcha' ), array( $this, 'wpcf7_image_captcha_form_tag_handler' ), array( 'name-attr' => true ) );
+        // wpcf7_add_form_tag( array( 'easacceptance' ), array( $this, 'wpcf7_easacceptance_form_tag_handler' ), array( 'name-attr' => true ) );
 
     }
 
