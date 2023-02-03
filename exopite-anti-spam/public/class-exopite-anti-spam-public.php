@@ -58,7 +58,7 @@ class Exopite_Anti_Spam_Public {
 
     public $cf7_meta = false;
 
-    public $min_time = 5;
+    public $min_time = 3;
     public $max_time = 300;
 
     public $logging = true;
