@@ -17,7 +17,7 @@ The plugin adds a timestamp, a honeypot with random location, token matching, ba
 * Customizable selection amount
 * Loads with Ajax so as not to be cached by caching plugins
 * Hidden honeypot field with a random position
-* Timestamp against bots (min 5 sec max 5 min)
+* Timestamp against bots (min 3 sec max 5 min)
 * Token matching
 * Bad/spam word filtering
 * Honeypot with random location

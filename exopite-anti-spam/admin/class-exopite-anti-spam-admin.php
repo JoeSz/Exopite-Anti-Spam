@@ -150,7 +150,7 @@ class Exopite_Anti_Spam_Admin {
         echo '<div class="eas-row-title">' . esc_attr( 'Timestamp', 'exopite-anti-spam' ) . '</div>';
 
         echo '<div class="eas-row-desc">' . esc_attr(
-            'Add hidden timestamp to ensure the minimum and maximum age of the "session". On submission, the plugin will compare the submitted timestamp with the timestamp when the form was displayed. If it is more than 5 minutes or less than 5 seconds, then it is very likely an automated bot/script, because a bot ‘types’ much faster than a human.'
+            'Add hidden timestamp to ensure the minimum and maximum age of the "session". On submission, the plugin will compare the submitted timestamp with the timestamp when the form was displayed. If it is more than 5 minutes or less than 3 seconds, then it is very likely an automated bot/script, because a bot ‘types’ much faster than a human.'
             , 'exopite-anti-spam' ) . '</div>';
 
         echo '<label for="eas-activate-timestamp">';
