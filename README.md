@@ -108,7 +108,7 @@ Server
 ## CHANGELOG
 
 = 20230203 =
-* Compatibility update for CF7 7.3
+* Compatibility update for CF7 5.7.3
 * Change "Timestamp" from 5 seconds to 3 seconds. Some user save forms in browser.
 
 = 20220620 =
