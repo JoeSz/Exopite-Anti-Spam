@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Package Name\n"
+"Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-07-22 08:28+0200\n"
+"POT-Creation-Date: 2023-07-19 07:35+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,50 +17,50 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: admin/class-exopite-anti-spam-admin.php:98
+#: admin/class-exopite-anti-spam-admin.php:95
 msgid "image captcha"
 msgstr ""
 
-#: admin/class-exopite-anti-spam-admin.php:106
+#: admin/class-exopite-anti-spam-admin.php:103
 msgid "Add image captcha to your form"
 msgstr ""
 
-#: admin/class-exopite-anti-spam-admin.php:112
+#: admin/class-exopite-anti-spam-admin.php:109
 msgid "Insert Tag"
 msgstr ""
 
-#: admin/class-exopite-anti-spam-admin.php:126
+#: admin/class-exopite-anti-spam-admin.php:123
 #, php-format
 msgid ""
 "In order to %1$s work, Contact From 7 needs to be installed and activated. "
 "%2$s"
 msgstr ""
 
-#: admin/class-exopite-anti-spam-admin.php:158
+#: admin/class-exopite-anti-spam-admin.php:166
 msgid "Activate timestamp"
 msgstr ""
 
-#: admin/class-exopite-anti-spam-admin.php:179
+#: admin/class-exopite-anti-spam-admin.php:196
 msgid "Activate honeypot"
 msgstr ""
 
-#: admin/class-exopite-anti-spam-admin.php:198
+#: admin/class-exopite-anti-spam-admin.php:215
 msgid "Activate bad/spam words filtering"
 msgstr ""
 
-#: admin/class-exopite-anti-spam-admin.php:217
+#: admin/class-exopite-anti-spam-admin.php:234
 msgid "Load via AJAX"
 msgstr ""
 
-#: admin/class-exopite-anti-spam-admin.php:236
+#: admin/class-exopite-anti-spam-admin.php:253
 msgid "Check acceptance via AJAX"
 msgstr ""
 
-#: admin/class-exopite-anti-spam-admin.php:245
+#: admin/class-exopite-anti-spam-admin.php:262
 msgid "Anti Spam"
 msgstr ""
 
-#: admin/class-exopite-anti-spam-admin.php:348
+#: admin/class-exopite-anti-spam-admin.php:389
 msgid "Settings"
 msgstr ""
 
@@ -114,7 +114,7 @@ msgid "Error message text"
 msgstr ""
 
 #: admin/partials/exopite-anti-spam-admin-display.php:65
-#: public/class-exopite-anti-spam-public.php:960
+#: public/class-exopite-anti-spam-public.php:808
 msgid "Your email is blocked."
 msgstr ""
 
@@ -137,7 +137,7 @@ msgid ""
 msgstr ""
 
 #: admin/partials/exopite-anti-spam-admin-display.php:77
-#: public/class-exopite-anti-spam-public.php:946
+#: public/class-exopite-anti-spam-public.php:793
 msgid "Your domain is blocked."
 msgstr ""
 
@@ -149,286 +149,350 @@ msgstr ""
 msgid "Save changes"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:40
+#: includes/class-exopite-anti-spam-icons.php:45
 msgid "the ambulance"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:42
+#: includes/class-exopite-anti-spam-icons.php:47
 msgid "the anchor"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:44
+#: includes/class-exopite-anti-spam-icons.php:49
 msgid "the auto"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:46
+#: includes/class-exopite-anti-spam-icons.php:51
 msgid "the scale"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:48
+#: includes/class-exopite-anti-spam-icons.php:53
 msgid "the barcode"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:50
+#: includes/class-exopite-anti-spam-icons.php:55
 msgid "the battery"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:52
+#: includes/class-exopite-anti-spam-icons.php:57
 msgid "the bed"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:54
+#: includes/class-exopite-anti-spam-icons.php:59
 msgid "the bell"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:56
+#: includes/class-exopite-anti-spam-icons.php:61
 msgid "the bicycle"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:58
+#: includes/class-exopite-anti-spam-icons.php:63
 msgid "the cake"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:60
+#: includes/class-exopite-anti-spam-icons.php:65
 msgid "the tie"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:62
+#: includes/class-exopite-anti-spam-icons.php:67
 msgid "the bolt"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:64
+#: includes/class-exopite-anti-spam-icons.php:69
 msgid "the book"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:66
+#: includes/class-exopite-anti-spam-icons.php:71
 msgid "the bug"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:68
+#: includes/class-exopite-anti-spam-icons.php:73
 msgid "the bus"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:70
+#: includes/class-exopite-anti-spam-icons.php:75
 msgid "the calculator"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:72
+#: includes/class-exopite-anti-spam-icons.php:77
 msgid "the camera"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:74
+#: includes/class-exopite-anti-spam-icons.php:79
 msgid "the circle"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:76
+#: includes/class-exopite-anti-spam-icons.php:81
 msgid "the clock"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:78
+#: includes/class-exopite-anti-spam-icons.php:83
 msgid "the cloud"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:80
+#: includes/class-exopite-anti-spam-icons.php:85
 msgid "the coffee"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:82
+#: includes/class-exopite-anti-spam-icons.php:87
 msgid "the cog"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:84
+#: includes/class-exopite-anti-spam-icons.php:89
 msgid "the compass"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:86
+#: includes/class-exopite-anti-spam-icons.php:91
 msgid "the scissors"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:88
+#: includes/class-exopite-anti-spam-icons.php:93
 msgid "the cutlery"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:90
+#: includes/class-exopite-anti-spam-icons.php:95
 msgid "the desktop"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:92
+#: includes/class-exopite-anti-spam-icons.php:97
 msgid "the dollar"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:94
+#: includes/class-exopite-anti-spam-icons.php:99
 msgid "the euro"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:96
+#: includes/class-exopite-anti-spam-icons.php:101
 msgid "the flag"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:98
+#: includes/class-exopite-anti-spam-icons.php:103
 msgid "the folder"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:100
+#: includes/class-exopite-anti-spam-icons.php:105
 msgid "the globe"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:102
+#: includes/class-exopite-anti-spam-icons.php:107
 msgid "the group"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:104
+#: includes/class-exopite-anti-spam-icons.php:109
 msgid "the headphones"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:106
+#: includes/class-exopite-anti-spam-icons.php:111
 msgid "the heart"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:108
+#: includes/class-exopite-anti-spam-icons.php:113
 msgid "the house"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:110
+#: includes/class-exopite-anti-spam-icons.php:115
 msgid "the hourglass"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:112
+#: includes/class-exopite-anti-spam-icons.php:117
 msgid "the info"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:114
+#: includes/class-exopite-anti-spam-icons.php:119
 msgid "the leaf"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:116
+#: includes/class-exopite-anti-spam-icons.php:121
 msgid "the lemon"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:118
+#: includes/class-exopite-anti-spam-icons.php:123
 msgid "the lightbulb"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:120
+#: includes/class-exopite-anti-spam-icons.php:125
 msgid "the lock"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:122
+#: includes/class-exopite-anti-spam-icons.php:127
 msgid "the microphone"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:124
+#: includes/class-exopite-anti-spam-icons.php:129
 msgid "the mobile"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:126
+#: includes/class-exopite-anti-spam-icons.php:131
 msgid "the motorcycle"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:128
+#: includes/class-exopite-anti-spam-icons.php:133
 msgid "the paint brush"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:130
+#: includes/class-exopite-anti-spam-icons.php:135
 msgid "the paw"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:132
+#: includes/class-exopite-anti-spam-icons.php:137
 msgid "the pencil"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:134
+#: includes/class-exopite-anti-spam-icons.php:139
 msgid "the phone"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:136
+#: includes/class-exopite-anti-spam-icons.php:141
 msgid "the plane"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:138
+#: includes/class-exopite-anti-spam-icons.php:143
 msgid "the plus"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:140
+#: includes/class-exopite-anti-spam-icons.php:145
 msgid "the puzzle"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:142
+#: includes/class-exopite-anti-spam-icons.php:147
 msgid "the road"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:144
+#: includes/class-exopite-anti-spam-icons.php:149
 msgid "the rocket"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:146
+#: includes/class-exopite-anti-spam-icons.php:151
 msgid "the basket"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:148
+#: includes/class-exopite-anti-spam-icons.php:153
 msgid "the spoon"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:150
+#: includes/class-exopite-anti-spam-icons.php:155
 msgid "the star"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:152
+#: includes/class-exopite-anti-spam-icons.php:157
 msgid "the suitcase"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:154
+#: includes/class-exopite-anti-spam-icons.php:159
 msgid "the thermometer"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:156
+#: includes/class-exopite-anti-spam-icons.php:161
 msgid "the trash"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:158
+#: includes/class-exopite-anti-spam-icons.php:163
 msgid "the tree"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:160
+#: includes/class-exopite-anti-spam-icons.php:165
 msgid "the truck"
 msgstr ""
 
-#: includes/class-exopite-anti-spam-icons.php:162
+#: includes/class-exopite-anti-spam-icons.php:167
 msgid "the umbrella"
 msgstr ""
 
-#: public/class-exopite-anti-spam-public.php:205
+#: public/class-exopite-anti-spam-public-fields.php:444
 msgid "and"
 msgstr ""
 
-#: public/class-exopite-anti-spam-public.php:454
+#: public/class-exopite-anti-spam-public-fields.php:500
 msgid "Loading..."
 msgstr ""
 
-#: public/class-exopite-anti-spam-public.php:456
+#: public/class-exopite-anti-spam-public-fields.php:502
 msgid "Please select "
 msgstr ""
 
-#: public/class-exopite-anti-spam-public.php:656
+#: public/class-exopite-anti-spam-public.php:115
+msgid "one"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php:116
+msgid "two"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php:117
+msgid "three"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php:118
+msgid "four"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php:119
+msgid "five"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php:120
+msgid "six"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php:121
+msgid "seven"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php:122
+msgid "eight"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php:123
+msgid "nine"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php:126
+msgid "icons"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php:126
+msgid "icon"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php:407
+#: public/class-exopite-anti-spam-public.php:435
+#: public/class-exopite-anti-spam-public.php:446
+#: public/class-exopite-anti-spam-public.php:485
+#: public/class-exopite-anti-spam-public.php:518
+#: public/class-exopite-anti-spam-public.php:541
+#: public/class-exopite-anti-spam-public.php:552
+#: public/class-exopite-anti-spam-public.php:607
+#: public/class-exopite-anti-spam-public.php:629
+#: public/class-exopite-anti-spam-public.php:643
+msgid "Validation errors occurred"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php:414
+#: public/class-exopite-anti-spam-public.php:666
 msgid "Your session has timed out. Please refresh and try again."
 msgstr ""
 
-#: public/class-exopite-anti-spam-public.php:692
-#: public/class-exopite-anti-spam-public.php:762
-#: public/class-exopite-anti-spam-public.php:826
-msgid "Timeout."
-msgstr ""
-
-#: public/class-exopite-anti-spam-public.php:722
+#: public/class-exopite-anti-spam-public.php:508
 msgid "Please make your selection."
 msgstr ""
 
-#: public/class-exopite-anti-spam-public.php:732
-#: public/class-exopite-anti-spam-public.php:776
+#: public/class-exopite-anti-spam-public.php:527
 msgid "Please select the correct icon(s)."
 msgstr ""
 
-#: public/class-exopite-anti-spam-public.php:893
+#: public/class-exopite-anti-spam-public.php:595
+msgid "Please select the correct"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php:653
+msgid "Token error."
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php:675
+msgid ""
+"The form was sent too quickly. Please wait a few seconds before trying again!"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php:738
 msgid "You are using some banned words."
 msgstr ""
 
