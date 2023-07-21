@@ -90,3 +90,13 @@ textarea.eas-form-field {
     margin-bottom: 0;
     margin-left: 15px;
 }
+.eas-timestamp-values {
+    padding-top: 10px;
+    display: flex;
+}
+.eas-timestamp-values input {
+    width: 100px;
+}
+.eas-row.eas-timestamp-values > div:last-child {
+    padding-left: 10px;
+}

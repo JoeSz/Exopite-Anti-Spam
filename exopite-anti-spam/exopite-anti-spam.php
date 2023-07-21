@@ -15,8 +15,8 @@
  * @wordpress-plugin
  * Plugin Name:       Exopite Anti Spam
  * Plugin URI:        https://www.joeszalai.org/exopite/anti-spam
- * Description:       Anti Spam plugin with timestamp, honeypot (random location), token matching, bad/spam word filtering, email and domain blacklist and an image captcha.
- * Version:           20230203
+ * Description:       Anti Spam plugin for Contact Form 7 with timestamp, honeypot (random location), token matching, bad/spam word filtering, email and domain blacklist and an image captcha, eg: [easimagecaptcha] or [easimagecaptcha icon:6 choose:3].
+ * Version:           20230719
  * Author:            Joe Szalai
  * Author URI:        https://www.joeszalai.org
  * License:           GPL-2.0+
@@ -35,7 +35,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'EXOPITE_ANTI_SPAM_VERSION', '20230203' );
+define( 'EXOPITE_ANTI_SPAM_VERSION', '20230719' );
 define( 'EXOPITE_ANTI_SPAM_URL', plugin_dir_url( __FILE__ ) );
 define( 'EXOPITE_ANTI_SPAM_PATH', plugin_dir_path( __FILE__ ) );
 define( 'EXOPITE_ANTI_SPAM_FILE', __FILE__ );

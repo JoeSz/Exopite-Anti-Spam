@@ -40,8 +40,8 @@ $options = get_option( $this->plugin_name );
         <p><?php esc_attr_e( 'The email addresses and domains entered here will be filtered out of all email fields from all Contact Form 7.', 'exopite-anti-spam' ); ?></p>
         <p>
             <ul>
-                <li><?php esc_attr_e( 'If you want to block only a specific email field in case there are multiple email fields in the form, you could install', 'exopite-anti-spam' ); ?> <a href="http://www.test1.test/wp-admin/plugin-install.php?tab=plugin-information&amp;plugin=block-email-cf7" target="_blank">Contact Form 7 – Blacklist Unwanted Email</a></li>
-                <li><?php esc_attr_e( 'If you want to block different email addresses and domains in each Contact From 7, you could install', 'exopite-anti-spam' ); ?> <a href="http://www.test1.test/wp-admin/plugin-install.php?tab=plugin-information&plugin=wp-contact-form7-email-spam-blocker" target="_blank">WP Contact Form7 Email Spam Blocker</a></li>
+                <li><?php esc_attr_e( 'If you want to block only a specific email field in case there are multiple email fields in the form, you could install', 'exopite-anti-spam' ); ?> <a href="<?php echo get_site_url(); ?>/wp-admin/plugin-install.php?tab=plugin-information&amp;plugin=block-email-cf7" target="_blank">Contact Form 7 – Blacklist Unwanted Email</a></li>
+                <li><?php esc_attr_e( 'If you want to block different email addresses and domains in each Contact From 7, you could install', 'exopite-anti-spam' ); ?> <a href="<?php echo get_site_url(); ?>/wp-admin/plugin-install.php?tab=plugin-information&plugin=wp-contact-form7-email-spam-blocker" target="_blank">WP Contact Form7 Email Spam Blocker</a></li>
             </ul>
         </p>
         <p><?php esc_attr_e( 'You could download a list of', 'exopite-anti-spam' ); ?> <a href="https://www.joewein.de/sw/blacklist.htm#bl" target="_blank"><?php esc_attr_e( 'spam domain for blacklist here', 'exopite-anti-spam' ); ?></a>.</p>

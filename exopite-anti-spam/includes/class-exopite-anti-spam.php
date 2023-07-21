@@ -72,6 +72,7 @@ class Exopite_Anti_Spam {
      * @var object      The public class.
      */
     public $public;
+    public $fields;
 
     /**
      * Store plugin admin class to allow public access.
@@ -105,6 +106,8 @@ class Exopite_Anti_Spam {
         }
 
         $this->main = $this;
+
+        $this->honeypot_name = apply_filters( 'exopite_anti_spam_honeypot_name', $this->honeypot_name );
 
         $this->load_dependencies();
         $this->set_locale();
@@ -154,6 +157,8 @@ class Exopite_Anti_Spam {
 		 */
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-exopite-anti-spam-public.php';
 
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-exopite-anti-spam-public-fields.php';
+
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-icons.php';
 
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-crytper.php';
@@ -193,6 +198,7 @@ class Exopite_Anti_Spam {
 		$this->admin = new Exopite_Anti_Spam_Admin( $this->get_plugin_name(), $this->get_version(), $this->main );
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $this->admin, 'enqueue_styles' );
+		$this->loader->add_action( 'admin_enqueue_scripts', $this->admin, 'enqueue_scripts' );
 
         $this->loader->add_action( 'admin_init', $this->admin, 'check_dependencies' );
 
@@ -337,17 +343,19 @@ class Exopite_Anti_Spam {
 	private function define_public_hooks() {
 
 		$this->public = new Exopite_Anti_Spam_Public( $this->get_plugin_name(), $this->get_version(), $this->main );
+		$this->fields = new Exopite_Anti_Spam_Public_Fields( $this->get_plugin_name(), $this->get_version(), $this->main );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $this->public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $this->public, 'enqueue_scripts' );
 
         // add_filter( 'wpcf7_verify_nonce', '__return_true' );
 
-        $this->loader->add_filter( 'wpcf7_init', $this->public, 'wpcf7_init', 10, 0 );
+        // Add field hooks
+        $this->loader->add_filter( 'wpcf7_init', $this->fields, 'wpcf7_init', 10, 0 );
+        $this->loader->add_filter( 'wpcf7_contact_form', $this->fields, 'wpcf7_contact_form', 10, 2 );
 
-        $this->loader->add_filter( 'wpcf7_contact_form', $this->public, 'wpcf7_contact_form', 10, 2 );
-
-        $this->loader->add_filter( 'wpcf7_validate', $this->public, 'wpcf7_validate', 10, 2 );
+        // Validation hooks
+        $this->loader->add_filter( 'wpcf7_validate', $this->public, 'wpcf7_validate', 30, 2 );
         $this->loader->add_filter( 'wpcf7_validate_' . $this->honeypot_name, $this->public, 'wpcf7_validate_honeypot', 10, 2 );
         $this->loader->add_filter( 'wpcf7_validate_eastimestamp', $this->public, 'wpcf7_validate_eastimestamp', 10, 2 );
         $this->loader->add_filter( 'wpcf7_validate_text', $this->public, 'validate_text_textarea_bad_words', 20, 2 );
@@ -356,20 +364,26 @@ class Exopite_Anti_Spam {
         $this->loader->add_filter( 'wpcf7_validate_textarea*', $this->public, 'validate_text_textarea_bad_words', 20, 2 );
         $this->loader->add_filter( 'wpcf7_validate_email', $this->public, 'validate_text_email_blacklist', 20, 2 );
         $this->loader->add_filter( 'wpcf7_validate_email*', $this->public, 'validate_text_email_blacklist', 20, 2 );
-        $this->loader->add_filter( 'wpcf7_validate_easimagecaptcha', $this->public, 'validate_easimagecaptcha', 20, 2 );
+        $this->loader->add_filter( 'wpcf7_validate_easimagecaptcha', $this->public, 'validate_easimagecaptcha', 5, 2 );
+        // $this->loader->add_filter( 'wpcf7_validate_easimagecaptcha*', $this->public, 'validate_easimagecaptcha', 5, 2 );
         $this->loader->add_filter( 'wpcf7_validate_easacceptance', $this->public, 'validate_easacceptance', 20, 2 );
 
-        $this->loader->add_filter( 'wp_ajax_eap_reload_cf7_fields', $this->public, 'reload_cf7_fields_ajax' );
-        $this->loader->add_filter( 'wp_ajax_nopriv_eap_reload_cf7_fields', $this->public, 'reload_cf7_fields_ajax' );
+        // DEBUG
+        $this->loader->add_action( 'wpcf7_submit', $this->public, 'wpcf7_submit', 20, 2 );
+
+        // AJAX hooks
+        $this->loader->add_filter( 'wp_ajax_eap_reload_cf7_fields', $this->fields, 'reload_cf7_fields_ajax' );
+        $this->loader->add_filter( 'wp_ajax_nopriv_eap_reload_cf7_fields', $this->fields, 'reload_cf7_fields_ajax' );
 
         $this->loader->add_filter( 'wp_ajax_eap_get_acceptance_token', $this->public, 'get_acceptance_token' );
         $this->loader->add_filter( 'wp_ajax_nopriv_eap_get_acceptance_token', $this->public, 'get_acceptance_token' );
 
-        $this->loader->add_filter( 'wpcf7_mail_sent', $this->public, 'wpcf7_mail_sent' );
+        $this->loader->add_shortcode( "contact-form-7-ajax", $this->fields, "contact_form_7_ajax", $priority = 10, $accepted_args = 2 );
+        $this->loader->add_filter( "wp_ajax_eas_get_contact_form_7_ajax", $this->fields, "get_contact_form_7_ajax" );
+        $this->loader->add_filter( "wp_ajax_nopriv_eas_get_contact_form_7_ajax", $this->fields, "get_contact_form_7_ajax" );
 
-        $this->loader->add_shortcode( "contact-form-7-ajax", $this->public, "contact_form_7_ajax", $priority = 10, $accepted_args = 2 );
-        $this->loader->add_filter( "wp_ajax_eas_get_contact_form_7_ajax", $this->public, "get_contact_form_7_ajax" );
-        $this->loader->add_filter( "wp_ajax_nopriv_eas_get_contact_form_7_ajax", $this->public, "get_contact_form_7_ajax" );
+        // Mail sent hooks
+        $this->loader->add_filter( 'wpcf7_mail_sent', $this->public, 'wpcf7_mail_sent' );
 
 	}
 

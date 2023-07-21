@@ -83,3 +83,19 @@
     position: relative;
     display: block;
 }
+/* Example */
+/*
+.wpcf7-not-valid-tip {
+    color: #dc3232 !important;
+}
+.wpcf7-form-control.wpcf7-not-valid {
+    border: 1px solid #dc3232 !important;
+}
+*/
+/* Debug */
+/*
+.wpcf7-form-control.wpcf7-text.eashpc_website_url {
+    height: 10px;
+    background: #eee;
+}
+*/

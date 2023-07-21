@@ -24,6 +24,11 @@ class Exopite_Anti_Spam_Icons {
 
     public function get_icons( $amount = 3 ) {
 
+        // If somebody cheat.
+        if ( ! $amount || empty( $amount ) || intval( $amount ) < 1 ) {
+            $amount = 3;
+        }
+
         $random = array_rand( $this->icons, $amount );
         $choices = array();
         foreach ( $random as $key => $value ) {

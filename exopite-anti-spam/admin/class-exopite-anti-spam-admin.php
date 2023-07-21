@@ -48,6 +48,9 @@ class Exopite_Anti_Spam_Admin {
      */
     public $main;
 
+    public $min_time_recommended = 2;
+    public $max_time_recommended = 10;
+
 	/**
 	 * Initialize the class and set its properties.
 	 *
@@ -70,19 +73,13 @@ class Exopite_Anti_Spam_Admin {
 	 */
 	public function enqueue_styles() {
 
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Exopite_Anti_Spam_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Exopite_Anti_Spam_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
-
 		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/exopite-anti-spam-admin.css', array(), $this->version, 'all' );
+
+	}
+
+	public function enqueue_scripts() {
+
+        wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/exopite-anti-spam-admin.js', array( 'jquery' ), $this->version, true );
 
 	}
 
@@ -145,17 +142,37 @@ class Exopite_Anti_Spam_Admin {
             $checked = ' checked="checked"';
         }
 
+        $timestamp_min = $this->min_time_recommended;
+        if ( isset( $options[0]['timestamp_min'] ) ) {
+            $timestamp_min = $options[0]['timestamp_min'];
+        }
+
+        $timestamp_max = $this->max_time_recommended;
+        if ( isset( $options[0]['timestamp_max'] ) ) {
+            $timestamp_max = $options[0]['timestamp_max'];
+        }
+
+
         echo '<div class="eas-row">';
 
         echo '<div class="eas-row-title">' . esc_attr( 'Timestamp', 'exopite-anti-spam' ) . '</div>';
 
         echo '<div class="eas-row-desc">' . esc_attr(
-            'Add hidden timestamp to ensure the minimum and maximum age of the "session". On submission, the plugin will compare the submitted timestamp with the timestamp when the form was displayed. If it is more than 5 minutes or less than 3 seconds, then it is very likely an automated bot/script, because a bot ‘types’ much faster than a human.'
+            'Add hidden timestamp to ensure the minimum and maximum age of the "session". On submission, the plugin will compare the submitted timestamp with the timestamp when the form was displayed. If it is more than 5 minutes or less than 5 seconds, then it is very likely an automated bot/script, because a bot ‘types’ much faster than a human.'
             , 'exopite-anti-spam' ) . '</div>';
 
         echo '<label for="eas-activate-timestamp">';
         echo '<input id="eas-activate-timestamp" class="eas-switch" type="checkbox" name="eas-activate-timestamp" value="yes"' . $checked . '>';
         echo ' ' . esc_html__( 'Activate timestamp', 'exopite-anti-spam' ) . '</label>';
+
+        echo '<div class="eas-row eas-timestamp-values" style="display:none;">';
+        echo '<div class="eas-col-6">';
+        echo '<label>Min (Seconds):</label> <input id="eas-activate-timestamp-min" class="" type="number" name="eas-activate-timestamp-min" value="' . $timestamp_min . '" min="1" max="60">';
+        echo '</div>';
+        echo '<div class="eas-col-6">';
+        echo '<label>Max (Minutes):</label> <input id="eas-activate-timestamp-max" class="" type="number" name="eas-activate-timestamp-max" value="' . $timestamp_max . '" min="1" max="1440">';
+        echo '</div>';
+        echo '</div>';
 
         echo '</div>';
 
@@ -190,8 +207,8 @@ class Exopite_Anti_Spam_Admin {
         echo '<div class="eas-row-title">' . esc_attr( 'Bad/spam words filtering', 'exopite-anti-spam' ) . '</div>';
 
         echo '<div class="eas-row-desc">' . esc_attr(
-            'Spam emails are different from email written by humans. Most of the time significantly different. Especially using words like “vicodin” or “viagra”. Those words are useful indicators for spam. The plugin will search this words in text and textarea fiels. If any found, then it is very likely written by an automated bot/script.'
-            , 'exopite-anti-spam' ) . '</div>';
+            'Spam emails are different from email written by humans. Most of the time significantly different. Especially using words like “vicodin” or “viagra”. Those words are useful indicators for spam. The plugin will search this words in text and textarea fiels. If any found, then it is very likely written by an automated bot/script. Location of the dictionary file: '
+            , 'exopite-anti-spam' )  . '<code>' . EXOPITE_ANTI_SPAM_PATH . 'lists/spamwords.txt' . '</code></div>';
 
         echo '<label for="eas-activate-badwords">';
         echo '<input id="eas-activate-badwords" class="eas-switch" type="checkbox" name="eas-activate-badwords" value="yes"' . $checked . '>';
@@ -276,6 +293,28 @@ class Exopite_Anti_Spam_Admin {
             $timestamp = 'no';
         }
 
+        $timestamp_min = $this->min_time_recommended;
+        if ( isset( $_POST['eas-activate-timestamp-min'] ) ) {
+
+            $timestamp_min_int = intval( $_POST['eas-activate-timestamp-min'] );
+
+            if ( $timestamp_min_int > 0 && $timestamp_min_int < 61 ) {
+                $timestamp_min = $timestamp_min_int;
+            }
+
+        }
+
+        $timestamp_max = $this->max_time_recommended;
+        if ( isset( $_POST['eas-activate-timestamp-max'] ) ) {
+
+            $timestamp_max_int = intval( $_POST['eas-activate-timestamp-max'] );
+
+            if ( $timestamp_max_int > 0 && $timestamp_max_int < 1441 ) {
+                $timestamp_max = $timestamp_max_int;
+            }
+
+        }
+
         if ( isset( $_POST['eas-activate-badwords'] ) ) {
             $badwords = 'yes';
         } else {
@@ -295,11 +334,13 @@ class Exopite_Anti_Spam_Admin {
         }
 
         $anti_spam_options = array(
-            'timestamp' => $timestamp,
-            'honeypot' => $honeypot,
-            'badwords' => $badwords,
-            'ajaxload' => $ajaxload,
-            'acceptance_ajaxcheck' => $acceptance_ajaxcheck,
+            'timestamp'             => $timestamp,
+            'timestamp_min'         => $timestamp_min,
+            'timestamp_max'         => $timestamp_max,
+            'honeypot'              => $honeypot,
+            'badwords'              => $badwords,
+            'ajaxload'              => $ajaxload,
+            'acceptance_ajaxcheck'  => $acceptance_ajaxcheck,
         );
 
         update_post_meta( $post_id, 'exopite-anti-spam', $anti_spam_options );
