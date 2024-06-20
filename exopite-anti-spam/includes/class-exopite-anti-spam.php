@@ -365,6 +365,12 @@ class Exopite_Anti_Spam {
         $this->loader->add_filter( 'wpcf7_validate_email', $this->public, 'validate_text_email_blacklist', 20, 2 );
         $this->loader->add_filter( 'wpcf7_validate_email*', $this->public, 'validate_text_email_blacklist', 20, 2 );
         $this->loader->add_filter( 'wpcf7_validate_easimagecaptcha', $this->public, 'validate_easimagecaptcha', 5, 2 );
+
+        /* Compatibility with "Conditional Fields for Contact Form 7" plugin */
+        if ( class_exists( 'CF7CF' ) ) {
+            $this->loader->add_filter( 'wpcf7cf_validate', $this->public, 'validate_easimagecaptcha', 10, 2 );
+        }
+
         // $this->loader->add_filter( 'wpcf7_validate_easimagecaptcha*', $this->public, 'validate_easimagecaptcha', 5, 2 );
         $this->loader->add_filter( 'wpcf7_validate_easacceptance', $this->public, 'validate_easacceptance', 20, 2 );
 
