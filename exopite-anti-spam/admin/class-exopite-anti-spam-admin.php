@@ -92,7 +92,21 @@ class Exopite_Anti_Spam_Admin {
     public function wpcf7_admin_init() {
 
         $tag_generator = WPCF7_TagGenerator::get_instance();
-        $tag_generator->add( 'easimagecaptcha', esc_attr__( 'image captcha', 'exopite-anti-spam' ), array( $this, 'cf7_tag_generator' ), array( 'nameless' => 1 ) );
+        // $tag_generator->add( 'easimagecaptcha', esc_attr__( 'image captcha', 'exopite-anti-spam' ), array( $this, 'cf7_tag_generator' ), array( 'nameless' => 1 ) );
+
+        if ( method_exists( $tag_generator, 'add' ) ) {
+            $tag_generator->add(
+                'easimagecaptcha',
+                esc_attr__( 'image captcha', 'exopite-anti-spam' ),
+                array(
+                    'name'        => 'easimagecaptcha',
+                    'title'       => esc_attr__( 'Image Captcha', 'exopite-anti-spam' ),
+                    'category'    => 'captcha',
+                    'description' => esc_html__( 'Adds an image-based captcha.', 'exopite-anti-spam' ),
+                    'callback'    => array( $this, 'cf7_tag_generator' ),
+                )
+            );
+        }
 
     }
 
