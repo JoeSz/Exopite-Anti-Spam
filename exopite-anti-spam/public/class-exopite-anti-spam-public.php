@@ -61,7 +61,7 @@ class Exopite_Anti_Spam_Public {
     public $min_time = 2;
     public $max_time = 600;
 
-    public $logging = true;
+    public $logging = false;
     public $honeypot = true;
 
     /**
@@ -213,9 +213,11 @@ class Exopite_Anti_Spam_Public {
 
         }
 
-        // DEBUG
-        file_put_contents( EXOPITE_ANTI_SPAM_PATH . '/logs/options-test-' . date( '_Y-m-d' ) . '.txt', PHP_EOL . date( 'Y-m-d H:i:s' ) . ' - ' . var_export( $options, true ) . PHP_EOL, FILE_APPEND );
-        $elapsed_seconds = ( time() - $time );
+        if ( $this->logging ) {
+            // DEBUG
+            file_put_contents( EXOPITE_ANTI_SPAM_PATH . '/logs/options-test-' . date( '_Y-m-d' ) . '.txt', PHP_EOL . date( 'Y-m-d H:i:s' ) . ' - ' . var_export( $options, true ) . PHP_EOL, FILE_APPEND );
+            $elapsed_seconds = ( time() - $time );
+        }
 
         if ( $elapsed_seconds < $this->min_time || $elapsed_seconds > ( $this->max_time ) ) {
             return false;
@@ -840,7 +842,7 @@ class Exopite_Anti_Spam_Public {
              * This field/tag is not visible, so the error message not visible too,
              * so we need to add the error message to the first tag, in the wpcf7_validate hook.
              */
-            // $result->invalidate( $tag, esc_attr__( "Validation errors occurred", 'contact-form-7' ) . ' (11)' );
+            $result->invalidate( $tag, esc_attr__( "Validation errors occurred", 'contact-form-7' ) . ' (11)' );
             $this->honeypot = false;
 
         }
@@ -853,21 +855,6 @@ class Exopite_Anti_Spam_Public {
      */
     public function wpcf7_submit( $contact_form, $result ) {
 
-        // only fr HR4YOU
-
-        $submission = WPCF7_Submission::get_instance();
-        $spam_log = $submission->get_spam_log();
-
-        $ip_address = new RemoteAddress();
-
-        file_put_contents( EXOPITE_ANTI_SPAM_PATH . '/logs/wpcf7_submit_spam' . date( '_Y-m-d' ) . '.log', PHP_EOL . date( 'Y-m-d H:i:s' ) . ' - ' . $ip_address->getIpAddress() . PHP_EOL .
-        var_export( $contact_form->id, true ) . PHP_EOL .
-        var_export( $spam_log, true ) . PHP_EOL .
-        var_export( $_POST, true ) . PHP_EOL .
-        var_export( $result, true ) . PHP_EOL .
-        '---' . PHP_EOL . PHP_EOL , FILE_APPEND );
-
-        /*
         if ( $this->logging ) {
 
             $submission = WPCF7_Submission::get_instance();
@@ -885,7 +872,6 @@ class Exopite_Anti_Spam_Public {
             }
 
         }
-        */
 
     }
 
