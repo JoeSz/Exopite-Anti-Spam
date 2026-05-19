@@ -104,6 +104,9 @@ The plugin allows you to filter certain email addresses and domains.
 
 == Changelog ==
 
+= 20260519 =
+* Allow to override honeypot and timestamp defalults with PHP (Hook)
+
 = 20201127 =
 * Fix: The image captcha creates a PHP error if only one icon needs to be selected.
 
