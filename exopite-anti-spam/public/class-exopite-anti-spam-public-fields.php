@@ -153,11 +153,15 @@ class Exopite_Anti_Spam_Public_Fields {
             return '';
         }
 
-        $timestamp = false;
+        // $timestamp = false;
+        // Use filter here too: if not saved, apply_filters decides
+
         $options = $this->main->public->get_cf7_meta();
-        if ( $options && $options['timestamp'] === 'yes' ) {
-            $timestamp = true;
-        }
+
+        $timestamp = isset( $options['timestamp'] ) ? ( $options['timestamp'] === 'yes' ) : apply_filters( 'exopite_enable_timestamp', false );
+        // if ( $options && $options['timestamp'] === 'yes' ) {
+        //     $timestamp = true;
+        // }
 
         $instance = WPCF7_ContactForm::get_current();
         $timestamp = apply_filters( 'exopite_anti_spam_timestamp', $timestamp, $tag, $instance );
@@ -189,7 +193,8 @@ class Exopite_Anti_Spam_Public_Fields {
 
         $options = $this->main->public->get_cf7_meta();
         $honeypot = false;
-        if ( $options && $options['honeypot'] === 'yes' ) {
+        $honeypot_active = isset( $options['honeypot'] ) ? ( $options['honeypot'] === 'yes' ) : apply_filters( 'exopite_enable_honeypot', false );
+        if ( $honeypot_active ) {
             $honeypot = true;
         }
 
@@ -280,7 +285,10 @@ class Exopite_Anti_Spam_Public_Fields {
             $options = maybe_unserialize( $cf7_meta['exopite-anti-spam'][0] );
         }
 
-        if ( $options && isset( $options['honeypot'] ) && $options['honeypot'] === 'yes' ) {
+        // Honeypot inject
+        $honeypot_active = isset( $options['honeypot'] ) ? ( $options['honeypot'] === 'yes' ) : apply_filters( 'exopite_enable_honeypot', false );
+
+        if ( $honeypot_active ) {
 
             $pattern = '/\[(.*?)?\](?:([^\[]+)?\[\/\])?/';
 
@@ -304,7 +312,10 @@ class Exopite_Anti_Spam_Public_Fields {
             $ajaxload = true;
         }
 
-        if ( $options && isset( $options['timestamp'] ) && $options['timestamp'] === 'yes' ) {
+        // Timestamp inject
+        $timestamp_active = isset( $options['timestamp'] ) ? ( $options['timestamp'] === 'yes' ) : apply_filters( 'exopite_enable_timestamp', false );
+
+        if ( $timestamp_active ) {
 
             $form .= '[eastimestamp eastimestamp]';
         }

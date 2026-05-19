@@ -826,7 +826,15 @@ class Exopite_Anti_Spam_Public {
         }
 
         $options = $this->get_cf7_meta();
-        if ( ! isset( $options ) || $options && $options['honeypot'] === 'no' ) {
+        // if ( ! isset( $options ) || $options && $options['honeypot'] === 'no' ) {
+        //     return $result;
+        // }
+
+        // Default: enabled (true) if not set,
+        // but can be overridden with the filter (e.g. 'exopite_enable_honeypot')
+        $honeypot_active = isset( $options['honeypot'] ) ? ( $options['honeypot'] === 'yes' ) : apply_filters( 'exopite_enable_honeypot', false );
+
+        if ( ! $honeypot_active ) {
             return $result;
         }
 

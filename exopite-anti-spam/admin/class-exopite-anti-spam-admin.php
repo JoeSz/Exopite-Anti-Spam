@@ -152,7 +152,8 @@ class Exopite_Anti_Spam_Admin {
         $options = get_post_meta( $form_id, 'exopite-anti-spam' );
 
         $checked = '';
-        if ( isset( $options[0]['timestamp'] ) && $options[0]['timestamp'] == 'yes' ) {
+        $timestamp_default = apply_filters( 'exopite_enable_timestamp', false );
+        if ( isset( $options[0]['timestamp'] ) ? ( $options[0]['timestamp'] == 'yes' ) : $timestamp_default ) {
             $checked = ' checked="checked"';
         }
 
@@ -191,7 +192,8 @@ class Exopite_Anti_Spam_Admin {
         echo '</div>';
 
         $checked = '';
-        if ( isset( $options[0]['honeypot'] ) && $options[0]['honeypot'] == 'yes' ) {
+        $honeypot_default = apply_filters( 'exopite_enable_honeypot', false );
+        if ( isset( $options[0]['honeypot'] ) ? ( $options[0]['honeypot'] == 'yes' ) : $honeypot_default ) {
             $checked = ' checked="checked"';
         }
 
