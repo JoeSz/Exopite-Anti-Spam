@@ -91,25 +91,68 @@ class Exopite_Anti_Spam_Admin {
 
     public function wpcf7_admin_init() {
 
-        $tag_generator = WPCF7_TagGenerator::get_instance();
-        // $tag_generator->add( 'easimagecaptcha', esc_attr__( 'image captcha', 'exopite-anti-spam' ), array( $this, 'cf7_tag_generator' ), array( 'nameless' => 1 ) );
+        if ( ! class_exists( 'WPCF7_TagGenerator' ) ) {
+            return;
+        }
 
-        if ( method_exists( $tag_generator, 'add' ) ) {
-            $tag_generator->add(
-                'easimagecaptcha',
-                esc_attr__( 'image captcha', 'exopite-anti-spam' ),
-                array(
-                    'name'        => 'easimagecaptcha',
-                    'title'       => esc_attr__( 'Image Captcha', 'exopite-anti-spam' ),
-                    'category'    => 'captcha',
-                    'description' => esc_html__( 'Adds an image-based captcha.', 'exopite-anti-spam' ),
-                    'callback'    => array( $this, 'cf7_tag_generator' ),
-                )
-            );
+        $tag_generator = WPCF7_TagGenerator::get_instance();
+
+        /**
+         * The 3rd parameter must be a callable, otherwise CF7 does not register the button.
+         * CF7 6+: tag generator version 2 (dialog), older versions: version 1 (thickbox).
+         */
+        if ( class_exists( 'WPCF7_TagGeneratorGenerator' ) ) {
+            $tag_generator->add( 'easimagecaptcha', esc_attr__( 'image captcha', 'exopite-anti-spam' ), array( $this, 'cf7_tag_generator_v2' ), array( 'version' => '2' ) );
+        } else {
+            $tag_generator->add( 'easimagecaptcha', esc_attr__( 'image captcha', 'exopite-anti-spam' ), array( $this, 'cf7_tag_generator' ), array( 'nameless' => 1 ) );
         }
 
     }
 
+    /**
+     * Tag generator dialog for CF7 6+, creates e.g. [easimagecaptcha icon:5 choose:2]
+     * (the tag needs no name, the field name is always "exanspsel").
+     */
+    public function cf7_tag_generator_v2( $contact_form, $options ) {
+
+        $tgg = new WPCF7_TagGeneratorGenerator( $options['content'] );
+
+        ?>
+        <header class="description-box">
+            <h3><?php esc_html_e( 'Image captcha form-tag generator', 'exopite-anti-spam' ); ?></h3>
+            <p><?php esc_html_e( 'Generates a form-tag for an image captcha: the visitor has to select the named icons. Further anti spam settings of the form are in the "Anti Spam" tab.', 'exopite-anti-spam' ); ?></p>
+        </header>
+
+        <div class="control-box">
+            <?php
+            $tgg->print( 'field_type', array(
+                'select_options' => array(
+                    'easimagecaptcha' => __( 'Image Captcha', 'exopite-anti-spam' ),
+                ),
+            ) );
+            ?>
+
+            <fieldset>
+                <legend id="<?php echo esc_attr( $tgg->ref( 'icon-legend' ) ); ?>"><?php esc_html_e( 'Number of icons (2-10)', 'exopite-anti-spam' ); ?></legend>
+                <input type="number" data-tag-part="option" data-tag-option="icon:" value="5" min="2" max="10" aria-labelledby="<?php echo esc_attr( $tgg->ref( 'icon-legend' ) ); ?>" />
+            </fieldset>
+
+            <fieldset>
+                <legend id="<?php echo esc_attr( $tgg->ref( 'choose-legend' ) ); ?>"><?php esc_html_e( 'Icons to select (less than the number of icons)', 'exopite-anti-spam' ); ?></legend>
+                <input type="number" data-tag-part="option" data-tag-option="choose:" value="2" min="1" max="9" aria-labelledby="<?php echo esc_attr( $tgg->ref( 'choose-legend' ) ); ?>" />
+            </fieldset>
+        </div>
+
+        <footer class="insert-box">
+            <?php $tgg->print( 'insert_box_content' ); ?>
+        </footer>
+        <?php
+
+    }
+
+    /**
+     * Tag generator for CF7 older than 6 (version 1).
+     */
     public function cf7_tag_generator( $contact_form, $args = '' ) {
         $args = wp_parse_args( $args, array() ); ?>
         <div class="control-box">
@@ -134,9 +177,10 @@ class Exopite_Anti_Spam_Admin {
 
                 <?php
                 printf(
-                    esc_html__( 'In order to %1$s work, Contact From 7 needs to be installed and activated. %2$s', 'cf7-repeatable-fields' ),
-                    '<strong>' . EXOPITE_ANTI_SPAM_PLUGIN_NICE_NAME . '</strong>',
-                    '<a href="' . admin_url( 'plugin-install.php?tab=plugin-information&plugin=contact-form-7&from=plugins&TB_iframe=true&width=600&height=550' ) . '" class="thickbox" title="Contact Form 7">Install Now.</a>'
+                    /* translators: 1: plugin name, 2: install link */
+                    esc_html__( 'In order to %1$s work, Contact Form 7 needs to be installed and activated. %2$s', 'exopite-anti-spam' ),
+                    '<strong>' . esc_html( EXOPITE_ANTI_SPAM_PLUGIN_NICE_NAME ) . '</strong>',
+                    '<a href="' . esc_url( admin_url( 'plugin-install.php?tab=plugin-information&plugin=contact-form-7&from=plugins&TB_iframe=true&width=600&height=550' ) ) . '" class="thickbox" title="Contact Form 7">' . esc_html__( 'Install Now.', 'exopite-anti-spam' ) . '</a>'
                 );
 
                 ?>
@@ -146,136 +190,131 @@ class Exopite_Anti_Spam_Admin {
 
     }
 
+    /**
+     * Output one switch row of the "Anti Spam" panel.
+     */
+    public function panel_switch_row( $id, $title, $description, $label, $checked, $extra = '' ) {
+
+        echo '<div class="eas-row">';
+        echo '<div class="eas-row-title">' . esc_html( $title ) . '</div>';
+        echo '<div class="eas-row-desc">' . $description . '</div>';
+        echo '<label for="' . esc_attr( $id ) . '">';
+        echo '<input id="' . esc_attr( $id ) . '" class="eas-switch" type="checkbox" name="' . esc_attr( $id ) . '" value="yes"' . checked( $checked, true, false ) . '>';
+        echo ' ' . esc_html( $label ) . '</label>';
+        echo $extra;
+        echo '</div>';
+
+    }
+
     public function wpcf7_editor_panel_preview() {
 
-        $form_id = $_GET['post'];
-        $options = get_post_meta( $form_id, 'exopite-anti-spam' );
-
-        $checked = '';
-        $timestamp_default = apply_filters( 'exopite_enable_timestamp', false );
-        if ( isset( $options[0]['timestamp'] ) ? ( $options[0]['timestamp'] == 'yes' ) : $timestamp_default ) {
-            $checked = ' checked="checked"';
-        }
+        // New (not yet saved) form: no post ID, defaults are used.
+        $form_id = isset( $_GET['post'] ) ? intval( $_GET['post'] ) : 0;
+        $options = $form_id ? get_post_meta( $form_id, 'exopite-anti-spam' ) : array();
 
         $timestamp_min = $this->min_time_recommended;
         if ( isset( $options[0]['timestamp_min'] ) ) {
-            $timestamp_min = $options[0]['timestamp_min'];
+            $timestamp_min = intval( $options[0]['timestamp_min'] );
         }
 
         $timestamp_max = $this->max_time_recommended;
         if ( isset( $options[0]['timestamp_max'] ) ) {
-            $timestamp_max = $options[0]['timestamp_max'];
+            $timestamp_max = intval( $options[0]['timestamp_max'] );
         }
 
+        // Timestamp
+        $checked = isset( $options[0]['timestamp'] ) ? ( $options[0]['timestamp'] == 'yes' ) : (bool) apply_filters( 'exopite_enable_timestamp', false );
 
-        echo '<div class="eas-row">';
+        $extra  = '<div class="eas-row eas-timestamp-values" style="display:none;">';
+        $extra .= '<div class="eas-col-6">';
+        $extra .= '<label for="eas-activate-timestamp-min">' . esc_html__( 'Min (seconds):', 'exopite-anti-spam' ) . '</label> <input id="eas-activate-timestamp-min" type="number" name="eas-activate-timestamp-min" value="' . esc_attr( $timestamp_min ) . '" min="1" max="60">';
+        $extra .= '</div>';
+        $extra .= '<div class="eas-col-6">';
+        $extra .= '<label for="eas-activate-timestamp-max">' . esc_html__( 'Max (minutes):', 'exopite-anti-spam' ) . '</label> <input id="eas-activate-timestamp-max" type="number" name="eas-activate-timestamp-max" value="' . esc_attr( $timestamp_max ) . '" min="1" max="1440">';
+        $extra .= '</div>';
+        $extra .= '</div>';
 
-        echo '<div class="eas-row-title">' . esc_attr( 'Timestamp', 'exopite-anti-spam' ) . '</div>';
+        $this->panel_switch_row(
+            'eas-activate-timestamp',
+            __( 'Timestamp', 'exopite-anti-spam' ),
+            esc_html__( 'Adds a hidden, encrypted timestamp to the form. On submission the plugin checks the time elapsed since the form was displayed: if it is less than the minimum (seconds) or more than the maximum (minutes) set below, the submission is rejected, because a bot "types" much faster than a human. If the time has expired, a new timestamp is loaded automatically and the visitor can submit the form again without losing the entered data.', 'exopite-anti-spam' ),
+            __( 'Activate timestamp', 'exopite-anti-spam' ),
+            $checked,
+            $extra
+        );
 
-        echo '<div class="eas-row-desc">' . esc_attr(
-            'Add hidden timestamp to ensure the minimum and maximum age of the "session". On submission, the plugin will compare the submitted timestamp with the timestamp when the form was displayed. If it is more than 5 minutes or less than 5 seconds, then it is very likely an automated bot/script, because a bot ‘types’ much faster than a human.'
-            , 'exopite-anti-spam' ) . '</div>';
+        // Honeypot
+        $checked = isset( $options[0]['honeypot'] ) ? ( $options[0]['honeypot'] == 'yes' ) : (bool) apply_filters( 'exopite_enable_honeypot', false );
 
-        echo '<label for="eas-activate-timestamp">';
-        echo '<input id="eas-activate-timestamp" class="eas-switch" type="checkbox" name="eas-activate-timestamp" value="yes"' . $checked . '>';
-        echo ' ' . esc_html__( 'Activate timestamp', 'exopite-anti-spam' ) . '</label>';
+        $this->panel_switch_row(
+            'eas-activate-honeypot',
+            __( 'Honeypot', 'exopite-anti-spam' ),
+            esc_html__( 'Adds an extra field to the form, which is invisible for humans, but bots usually fill it out. If the field is not empty, the submission is rejected. The field is placed at a random location in the form, so it is harder for spam bots to detect it.', 'exopite-anti-spam' ),
+            __( 'Activate honeypot', 'exopite-anti-spam' ),
+            $checked
+        );
 
-        echo '<div class="eas-row eas-timestamp-values" style="display:none;">';
-        echo '<div class="eas-col-6">';
-        echo '<label>Min (Seconds):</label> <input id="eas-activate-timestamp-min" class="" type="number" name="eas-activate-timestamp-min" value="' . $timestamp_min . '" min="1" max="60">';
-        echo '</div>';
-        echo '<div class="eas-col-6">';
-        echo '<label>Max (Minutes):</label> <input id="eas-activate-timestamp-max" class="" type="number" name="eas-activate-timestamp-max" value="' . $timestamp_max . '" min="1" max="1440">';
-        echo '</div>';
-        echo '</div>';
+        // Bad words
+        $checked = isset( $options[0]['badwords'] ) ? ( $options[0]['badwords'] == 'yes' ) : (bool) apply_filters( 'exopite_enable_badwords', false );
 
-        echo '</div>';
+        $this->panel_switch_row(
+            'eas-activate-badwords',
+            __( 'Bad/spam words filtering', 'exopite-anti-spam' ),
+            esc_html__( 'Spam messages often contain words like "viagra" or "vicodin". The plugin searches these words in text and textarea fields, if any is found, the submission is rejected. Own words can be added on the "Blacklist" settings page (Contact menu).', 'exopite-anti-spam' ),
+            __( 'Activate bad/spam words filtering', 'exopite-anti-spam' ),
+            $checked
+        );
 
-        $checked = '';
-        $honeypot_default = apply_filters( 'exopite_enable_honeypot', false );
-        if ( isset( $options[0]['honeypot'] ) ? ( $options[0]['honeypot'] == 'yes' ) : $honeypot_default ) {
-            $checked = ' checked="checked"';
-        }
+        // AJAX loading
+        $checked = ( isset( $options[0]['ajaxload'] ) && $options[0]['ajaxload'] == 'yes' );
 
-        echo '<div class="eas-row">';
+        $this->panel_switch_row(
+            'eas-activate-ajaxload',
+            __( 'AJAX loading', 'exopite-anti-spam' ),
+            esc_html__( 'Loads the image captcha and the timestamp via AJAX, so they are not cached by caching plugins. Recommended if the page is cached. Visitors with JavaScript disabled can not send the form.', 'exopite-anti-spam' ),
+            __( 'Load via AJAX', 'exopite-anti-spam' ),
+            $checked
+        );
 
-        echo '<div class="eas-row-title">' . esc_attr( 'Honeypot', 'exopite-anti-spam' ) . '</div>';
+        // Acceptance
+        $checked = ( isset( $options[0]['acceptance_ajaxcheck'] ) && $options[0]['acceptance_ajaxcheck'] == 'yes' );
 
-        echo '<div class="eas-row-desc">' . esc_attr(
-            'Honeypot is a computer security mechanism. It is a decoy that looks and operates like a normal form field, to protect by attract and detect potential attackers. With honeypot the plugin can detect if they are being targeted by cyber threats.
-            Basically, it’s a extra form field to detect whether the form filled by a genuine person or a spam-bot. The field is an invisible fields on the form. Invisible is different than hidden! Bots understand hidden fields and they will ignore it. The label is set to instruct the end user to absolutely nothing with the field and just leave it empty. The technik rely on the assumption, that an automated bot/script will complete every field in the form. However, some will get through, but not many.
-            The plugin also display the honeypot field in the form in a random location. Keep moving it around between the valid fields to prevent the spambot writer to detect the field easily.'
-            , 'exopite-anti-spam' ) . '</div>';
+        $this->panel_switch_row(
+            'eas-acceptance-ajaxcheck',
+            __( 'Acceptance JavaScript bot detection', 'exopite-anti-spam' ),
+            sprintf(
+                /* translators: %s: [acceptance] form tag */
+                esc_html__( 'When the acceptance checkbox is clicked, the plugin requests a single use token via AJAX to check if the visitor is a human. Visitors with JavaScript disabled can not send the form. The %s field is required for this function!', 'exopite-anti-spam' ),
+                '<code>[acceptance]</code>'
+            ),
+            __( 'Check acceptance via AJAX', 'exopite-anti-spam' ),
+            $checked
+        );
 
-        echo '<label for="eas-activate-honeypot">';
-        echo '<input id="eas-activate-honeypot" class="eas-switch" type="checkbox" name="eas-activate-honeypot" value="yes"' . $checked . '>';
-        echo ' ' . esc_html__( 'Activate honeypot', 'exopite-anti-spam' ) . '</label>';
+        // Rate limit
+        $checked = $this->main->public->is_ratelimit_active( isset( $options[0] ) ? $options[0] : false );
+        $ratelimit = $this->main->public->get_ratelimit_settings();
 
-        echo '</div>';
-
-        $checked = '';
-        if ( isset( $options[0]['badwords'] ) && $options[0]['badwords'] == 'yes' ) {
-            $checked = ' checked="checked"';
-        }
-
-        echo '<div class="eas-row">';
-
-        echo '<div class="eas-row-title">' . esc_attr( 'Bad/spam words filtering', 'exopite-anti-spam' ) . '</div>';
-
-        echo '<div class="eas-row-desc">' . esc_attr(
-            'Spam emails are different from email written by humans. Most of the time significantly different. Especially using words like “vicodin” or “viagra”. Those words are useful indicators for spam. The plugin will search this words in text and textarea fiels. If any found, then it is very likely written by an automated bot/script. Location of the dictionary file: '
-            , 'exopite-anti-spam' )  . '<code>' . EXOPITE_ANTI_SPAM_PATH . 'lists/spamwords.txt' . '</code></div>';
-
-        echo '<label for="eas-activate-badwords">';
-        echo '<input id="eas-activate-badwords" class="eas-switch" type="checkbox" name="eas-activate-badwords" value="yes"' . $checked . '>';
-        echo ' ' . esc_html__( 'Activate bad/spam words filtering', 'exopite-anti-spam' ) . '</label>';
-
-        echo '</div>';
-
-        $checked = '';
-        if ( isset( $options[0]['ajaxload'] ) && $options[0]['ajaxload'] == 'yes' ) {
-            $checked = ' checked="checked"';
-        }
-
-        echo '<div class="eas-row">';
-
-        echo '<div class="eas-row-title">' . esc_attr( 'AJAX loading', 'exopite-anti-spam' ) . '</div>';
-
-        echo '<div class="eas-row-desc">' . esc_attr(
-            'Load image captcha and timestamp field with ajax, prevent to be cached by caching plugins. If visitor has javascript diasbled, she or he will not able to send any emails form the form.'
-            , 'exopite-anti-spam' ) . '</div>';
-
-        echo '<label for="eas-activate-ajaxload">';
-        echo '<input id="eas-activate-ajaxload" class="eas-switch" type="checkbox" name="eas-activate-ajaxload" value="yes"' . $checked . '>';
-        echo ' ' . esc_html__( 'Load via AJAX', 'exopite-anti-spam' ) . '</label>';
-
-        echo '</div>';
-
-        $checked = '';
-        if ( isset( $options[0]['acceptance_ajaxcheck'] ) && $options[0]['acceptance_ajaxcheck'] == 'yes' ) {
-            $checked = ' checked="checked"';
-        }
-
-        echo '<div class="eas-row">';
-
-        echo '<div class="eas-row-title">' . esc_attr( 'Acceptance Javascript bot detection', 'exopite-anti-spam' ) . '</div>';
-
-        echo '<div class="eas-row-desc">' . esc_attr(
-            sprintf( 'On Acceptance click, the plugin will request a token via AJAX to check if the user is a bot or a human.  If visitor has javascript diasbled, she or he will not able to send any emails form the form. The %s field is required for this function!', '<code>[acceptance]</code>' )
-            , 'exopite-anti-spam' ) . '</div>';
-
-        echo '<label for="eas-acceptance-ajaxcheck">';
-        echo '<input id="eas-acceptance-ajaxcheck" class="eas-switch" type="checkbox" name="eas-acceptance-ajaxcheck" value="yes"' . $checked . '>';
-        echo ' ' . esc_html__( 'Check acceptance via AJAX', 'exopite-anti-spam' ) . '</label>';
-
-        echo '</div>';
+        $this->panel_switch_row(
+            'eas-activate-ratelimit',
+            __( 'Limit failed attempts', 'exopite-anti-spam' ),
+            esc_html( sprintf(
+                /* translators: 1: max failed attempts, 2: time window in minutes, 3: block time in minutes */
+                __( 'After %1$d failed attempts (e.g. wrong image captcha, honeypot, token error) within %2$d minutes, the IP address of the visitor is blocked for %3$d minutes. This prevents bots from guessing the image captcha. The IP address is only stored as a hash in a temporary entry. Deactivate this, if the website is behind a proxy or CDN, which does not pass the IP address of the visitors (all visitors would have the same IP address).', 'exopite-anti-spam' ),
+                $ratelimit['max_failures'],
+                $ratelimit['window'] / MINUTE_IN_SECONDS,
+                $ratelimit['block'] / MINUTE_IN_SECONDS
+            ) ),
+            __( 'Activate limit of failed attempts', 'exopite-anti-spam' ),
+            $checked
+        );
 
     }
 
     public function wpcf7_editor_panels( $panels ) {
 
         $panels['exopite-anti-spam-panel'] = array(
-                'title' => __( 'Anti Spam', 'contact-form-7' ),
+                'title' => __( 'Anti Spam', 'exopite-anti-spam' ),
                 'callback' => array( $this, 'wpcf7_editor_panel_preview' ),
         );
 
@@ -349,6 +388,8 @@ class Exopite_Anti_Spam_Admin {
             $acceptance_ajaxcheck = 'no';
         }
 
+        $ratelimit = isset( $_POST['eas-activate-ratelimit'] ) ? 'yes' : 'no';
+
         $anti_spam_options = array(
             'timestamp'             => $timestamp,
             'timestamp_min'         => $timestamp_min,
@@ -357,6 +398,7 @@ class Exopite_Anti_Spam_Admin {
             'badwords'              => $badwords,
             'ajaxload'              => $ajaxload,
             'acceptance_ajaxcheck'  => $acceptance_ajaxcheck,
+            'ratelimit'             => $ratelimit,
         );
 
         update_post_meta( $post_id, 'exopite-anti-spam', $anti_spam_options );
@@ -392,23 +434,6 @@ class Exopite_Anti_Spam_Admin {
     }
 
     /**
-     * Add settings action link to the plugins page.
-     *
-     * @since    1.0.0
-     */
-    public function add_action_links( $links ) {
-
-        /*
-        *  Documentation : https://codex.wordpress.org/Plugin_API/Filter_Reference/plugin_action_links_(plugin_file_name)
-        */
-        $settings_link = array(
-            '<a href="' . admin_url( 'options-general.php?page=' . $this->plugin_name ) . '">' . __( 'Settings', $this->plugin_name ) . '</a>',
-        );
-        return array_merge(  $settings_link, $links );
-
-    }
-
-    /**
      * Render the settings page for this plugin.
      *
      * @since    1.0.0
@@ -428,11 +453,20 @@ class Exopite_Anti_Spam_Admin {
 
         $options = get_option( $this->plugin_name );
 
-        // $options['form_email_fields'] = sanitize_text_field( $input['form_email_fields'] );
-        $options['list_of_block_domains'] = sanitize_textarea_field( $input['list_of_block_domains'] );
-        $options['list_of_block_emails'] = sanitize_textarea_field( $input['list_of_block_emails'] );
-        $options['display_error_message_email'] = sanitize_text_field( $input['display_error_message_email'] );
-        $options['display_error_message_domain'] = sanitize_text_field( $input['display_error_message_domain'] );
+        if ( ! is_array( $options ) ) {
+            $options = array();
+        }
+
+        $textarea_fields = array( 'list_of_block_domains', 'list_of_block_emails', 'custom_spam_words' );
+        $text_fields = array( 'display_error_message_email', 'display_error_message_domain' );
+
+        foreach ( $textarea_fields as $field ) {
+            $options[ $field ] = isset( $input[ $field ] ) && is_string( $input[ $field ] ) ? sanitize_textarea_field( $input[ $field ] ) : '';
+        }
+
+        foreach ( $text_fields as $field ) {
+            $options[ $field ] = isset( $input[ $field ] ) && is_string( $input[ $field ] ) ? sanitize_text_field( $input[ $field ] ) : '';
+        }
 
         return $options;
 

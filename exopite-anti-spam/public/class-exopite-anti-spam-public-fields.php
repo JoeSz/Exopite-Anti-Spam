@@ -109,39 +109,42 @@ class Exopite_Anti_Spam_Public_Fields {
         wpcf7_add_form_tag( array( 'easimagecaptcha' ), array( $this, 'wpcf7_image_captcha_form_tag_handler' ) );
         wpcf7_add_form_tag( array( 'easacceptance' ), array( $this, 'wpcf7_easacceptance_form_tag_handler' ) );
 
-        // wpcf7_add_form_tag( array( $this->main->honeypot_name ), array( $this, 'wpcf7_honeypot_form_tag_handler' ), array( 'name-attr' => true ) );
-        // wpcf7_add_form_tag( array( 'eastimestamp' ), array( $this, 'wpcf7_timestamp_form_tag_handler' ), array( 'name-attr' => true ) );
-        // wpcf7_add_form_tag( array( 'easimagecaptcha' ), array( $this, 'wpcf7_image_captcha_form_tag_handler' ), array( 'name-attr' => true ) );
-        // wpcf7_add_form_tag( array( 'easacceptance' ), array( $this, 'wpcf7_easacceptance_form_tag_handler' ), array( 'name-attr' => true ) );
-
     }
 
-    public function wpcf7_easacceptance_form_tag_handler( $tag ) {
+    /**
+     * Is the acceptance AJAX check active for the current form?
+     * Used by the form tag handler and the validation too.
+     */
+    public function is_acceptance_ajaxcheck_active( $tag ) {
 
         $acceptance_ajaxcheck = false;
         $options = $this->main->public->get_cf7_meta();
-        if ( $options && $options['acceptance_ajaxcheck'] === 'yes' ) {
+        if ( $options && isset( $options['acceptance_ajaxcheck'] ) && $options['acceptance_ajaxcheck'] === 'yes' ) {
             $acceptance_ajaxcheck = true;
         }
 
         $instance = WPCF7_ContactForm::get_current();
-        $acceptance_ajaxcheck = apply_filters( 'exopite_anti_spam_easacceptance', $acceptance_ajaxcheck, $tag, $instance );
 
-        if ( ! $acceptance_ajaxcheck ) {
+        return apply_filters( 'exopite_anti_spam_easacceptance', $acceptance_ajaxcheck, $tag, $instance );
+    }
+
+    public function wpcf7_easacceptance_form_tag_handler( $tag ) {
+
+        if ( ! $this->is_acceptance_ajaxcheck_active( $tag ) ) {
             return '';
         }
 
         $atts          = array();
         $atts['name']  = 'easacceptance';
         $atts['id'] = 'easacceptance';
-        // $atts['type']  = 'text';
         $atts['type']  = 'hidden';
         $atts['value'] = '';
         $atts['autocomplete'] = 'off';
         $atts['tabindex'] = '-1';
         $atts = wpcf7_format_atts( $atts );
 
-        $html = sprintf( '<input %1$s  /><noscript style="color:red;text-align:center;display:block;font-weight:bold;line-height:1.2;padding:15px 0;">This contact form will not function without javascript enabled. Please enable javascript on your browser.</noscript>', $atts );
+        // The wrapper is required to display the error messages of this field.
+        $html = sprintf( '<span class="wpcf7-form-control-wrap" data-name="easacceptance"><input %1$s  /></span><noscript style="color:red;text-align:center;display:block;font-weight:bold;line-height:1.2;padding:15px 0;">This contact form will not function without javascript enabled. Please enable javascript on your browser.</noscript>', $atts );
 
         return $html;
 
@@ -153,15 +156,10 @@ class Exopite_Anti_Spam_Public_Fields {
             return '';
         }
 
-        // $timestamp = false;
-        // Use filter here too: if not saved, apply_filters decides
-
+        // If not saved, the filter decides
         $options = $this->main->public->get_cf7_meta();
 
         $timestamp = isset( $options['timestamp'] ) ? ( $options['timestamp'] === 'yes' ) : apply_filters( 'exopite_enable_timestamp', false );
-        // if ( $options && $options['timestamp'] === 'yes' ) {
-        //     $timestamp = true;
-        // }
 
         $instance = WPCF7_ContactForm::get_current();
         $timestamp = apply_filters( 'exopite_anti_spam_timestamp', $timestamp, $tag, $instance );
@@ -173,7 +171,6 @@ class Exopite_Anti_Spam_Public_Fields {
         $atts          = array();
         $atts['name']  = 'eastimestamp';
         $atts['class'] = 'eastimestamp';
-        // $atts['type']  = 'text';
         $atts['type']  = 'hidden';
         $atts['value'] = $this->get_timestamp_value();
         $atts['autocomplete'] = 'off';
@@ -296,7 +293,8 @@ class Exopite_Anti_Spam_Public_Fields {
 
             $random_pos = mt_rand( 0, ( $amount - 1 ) );
 
-            $honeypot = '<span class="wpcf7-form-control-wrap" data-name="' . $this->main->honeypot_name . '" data-js="false">[' . $this->main->honeypot_name . ' ' . $this->main->honeypot_name . ']</span>';
+            // aria-hidden: screen readers skip the field, so blind visitors do not fill it out by mistake (bots ignore it).
+            $honeypot = '<span class="wpcf7-form-control-wrap" data-name="' . $this->main->honeypot_name . '" data-js="false" aria-hidden="true">[' . $this->main->honeypot_name . ' ' . $this->main->honeypot_name . ']</span>';
 
             $i = 0;
             foreach( $matches[1] as $match) {
@@ -332,7 +330,22 @@ class Exopite_Anti_Spam_Public_Fields {
 
     }
 
+    /**
+     * The title comes from an unauthenticated AJAX request, characters which could
+     * close the shortcode or inject another one ("[", "]", quotes) are removed.
+     */
+    public function sanitize_shortcode_attr( $value ) {
+
+        $value = sanitize_text_field( wp_unslash( (string) $value ) );
+
+        return str_replace( array( '[', ']', '"', "'", '<', '>' ), '', $value );
+
+    }
+
     public function get_contact_form_7_content( $cf7_id, $cf7_title ) {
+
+        $cf7_id = intval( $cf7_id );
+        $cf7_title = $this->sanitize_shortcode_attr( $cf7_title );
 
         return apply_filters( 'the_content', '[contact-form-7 id="' . $cf7_id . '" title="' . $cf7_title . '"]' );
 
@@ -340,8 +353,8 @@ class Exopite_Anti_Spam_Public_Fields {
 
     public function get_contact_form_7_ajax() {
 
-        $cf7_id = intval( $_POST['cf7_id'] );
-        $cf7_title = esc_attr( $_POST['cf7_title'] );
+        $cf7_id = isset( $_POST['cf7_id'] ) ? intval( $_POST['cf7_id'] ) : 0;
+        $cf7_title = isset( $_POST['cf7_title'] ) ? $_POST['cf7_title'] : '';
         echo $this->get_contact_form_7_content( $cf7_id, $cf7_title );
         die();
 
@@ -358,8 +371,9 @@ class Exopite_Anti_Spam_Public_Fields {
             $atts
         );
 
+        // die() would stop rendering the whole page, show the error only to editors.
         if ( empty( $args['id'] ) ) {
-            die( 'ID can not be empty!' );
+            return current_user_can( 'edit_posts' ) ? '<p>[contact-form-7-ajax]: ID can not be empty!</p>' : '';
         }
 
         $ret = '<div class="eas-cf7-shortcode" ';
@@ -400,6 +414,12 @@ class Exopite_Anti_Spam_Public_Fields {
 
         $ret = array();
 
+        // CF7 removed without the plugins page (e.g. via FTP): WordPress does not deactivate this plugin then.
+        if ( ! class_exists( 'WPCF7_ContactForm' ) ) {
+            echo json_encode( $ret );
+            die();
+        }
+
         if ( isset( $_POST['timestamp'] ) && ! empty( $_POST['timestamp'] ) ) {
             $ret['timestamp'] = $this->get_timestamp_value();
         }
@@ -415,20 +435,19 @@ class Exopite_Anti_Spam_Public_Fields {
 
     public function get_image_captcha_html_ajax( $return = false ) {
 
-        $auth = $_POST['exanspselAuth'];
+        $auth = isset( $_POST['exanspselAuth'] ) ? $_POST['exanspselAuth'] : '';
 
         $icons_amount = 5;
         $selected_amount = 2;
 
-        try {
+        $image_captcha_data_decrypted = $this->main->public->crypter->decrypt( $this->main->public->request_hex2bin( $auth ), $this->main->public->get_token() );
 
-            $image_captcha_data_decrypted = $this->main->public->crypter->decrypt( hex2bin( $auth ), $this->main->public->get_token() );
+        if ( $image_captcha_data_decrypted ) {
+
             $image_captcha_data = explode( '|', $image_captcha_data_decrypted );
 
-            $icons_amount = json_decode( $image_captcha_data[3] );
-            $selected_amount = json_decode( $image_captcha_data[4] );
-
-        } catch (Exception $e) {
+            $icons_amount = isset( $image_captcha_data[3] ) ? intval( $image_captcha_data[3] ) : 0;
+            $selected_amount = isset( $image_captcha_data[4] ) ? intval( $image_captcha_data[4] ) : 0;
 
         }
 
@@ -463,7 +482,7 @@ class Exopite_Anti_Spam_Public_Fields {
          */
         $options = $this->main->public->get_cf7_meta();
         $ajaxload = false;
-        if ( $options && $options['ajaxload'] === 'yes' ) {
+        if ( $options && isset( $options['ajaxload'] ) && $options['ajaxload'] === 'yes' ) {
             $ajaxload = true;
         }
 
@@ -473,8 +492,6 @@ class Exopite_Anti_Spam_Public_Fields {
         $icons = new Exopite_Anti_Spam_Icons();
         $choices = $icons->get_icons( $icons_amount );
         $choices = apply_filters( 'exopite_anti_spam_exanspsel_icons', $choices, $icons_amount );
-
-        // $human = rand( 0, ( count( $choices ) - 1 ) );
 
         $keys = array_keys( $choices );
 
@@ -507,7 +524,7 @@ class Exopite_Anti_Spam_Public_Fields {
         $output = '<span class="eas-image-selector"><span class="eas-image-selector-title">';
 
 
-        if ( $options && $options['ajaxload'] === 'yes' && ! isset( $_POST['action'] ) ) {
+        if ( $options && isset( $options['ajaxload'] ) && $options['ajaxload'] === 'yes' && ! isset( $_POST['action'] ) ) {
             $inner = '<span class="exanspsel-ajax-loading">' . esc_attr__( 'Loading...', 'exopite-anti-spam' ) . '</span>';
         } else {
             $selected_amount_as_text = $this->main->public->get_icons_amount_translation( $selected_amount );
@@ -520,18 +537,21 @@ class Exopite_Anti_Spam_Public_Fields {
             $inner .= '<span class="eas-image-selector-images">';
 
             $i = 0;
+            // Slightly different SVG markup on every render (invisible), can be disabled with the filter.
+            $randomize_icons = apply_filters( 'exopite_anti_spam_randomize_icons', true );
+
             foreach ( $choices as $title => $image ) {
+                if ( $randomize_icons ) {
+                    $image = $icons->randomize_svg( $image );
+                }
                 $inner .= '<label><input type="checkbox" name="exanspsel[]" value="'. $i .'"  />'. $image .'</label>';
                 $i++;
             }
         }
 
         $output .= apply_filters( 'exopite_anti_spam_exanspsel_icons_html', $inner, $choices );
-        // $output .= '<pre>' .  var_export( $choices, true ) . '</pre>';
 
         $output .= '</span></span>';
-        // Debug
-        // $output .= '<input type="text" name="exanspsel-auth" class="exanspsel-auth" value="' . $selected_keys_encrypted . '" autocomplete="off" tabindex="-1">';
         $output .= '<input type="hidden" name="exanspsel-auth" class="exanspsel-auth" value="' . $selected_keys_encrypted . '" autocomplete="off" tabindex="-1">';
 
         $error = '';

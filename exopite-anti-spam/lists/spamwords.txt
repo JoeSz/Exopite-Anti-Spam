@@ -286,6 +286,6 @@ teens
 tits
 tramadol
 url=
-[url]
+(?<=\[)url(?=\])
 viagra
 vicodin

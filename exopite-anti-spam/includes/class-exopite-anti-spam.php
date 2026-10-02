@@ -165,7 +165,14 @@ class Exopite_Anti_Spam {
 
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-ip-address.php';
 
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-activator.php';
+
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-logger.php';
+
 		$this->loader = new Exopite_Anti_Spam_Loader();
+
+        // Create/update the token table after plugin updates.
+        $this->loader->add_action( 'plugins_loaded', 'Exopite_Anti_Spam_Activator', 'maybe_update_db' );
 
 	}
 
@@ -208,11 +215,6 @@ class Exopite_Anti_Spam {
 
         // Add menu item
         $this->loader->add_action( 'admin_menu', $this->admin, 'add_plugin_admin_menu' );
-
-        // Add Settings link to the plugin
-        // $plugin_basename = plugin_basename( plugin_dir_path( __DIR__ ) . $this->plugin_name . '.php' );
-
-        // $this->loader->add_filter( 'plugin_action_links_' . $plugin_basename, $plugin_admin, 'add_action_links' );
 
         $this->loader->add_filter( 'wpcf7_admin_init', $this->admin, 'wpcf7_admin_init', 55 );
         $this->loader->add_action( 'wpcf7_editor_panels', $this->admin, 'wpcf7_editor_panels', 10, 1 );
@@ -348,8 +350,6 @@ class Exopite_Anti_Spam {
 		$this->loader->add_action( 'wp_enqueue_scripts', $this->public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $this->public, 'enqueue_scripts' );
 
-        // add_filter( 'wpcf7_verify_nonce', '__return_true' );
-
         // Add field hooks
         $this->loader->add_filter( 'wpcf7_init', $this->fields, 'wpcf7_init', 10, 0 );
         $this->loader->add_filter( 'wpcf7_contact_form', $this->fields, 'wpcf7_contact_form', 10, 2 );
@@ -366,13 +366,26 @@ class Exopite_Anti_Spam {
         $this->loader->add_filter( 'wpcf7_validate_email*', $this->public, 'validate_text_email_blacklist', 20, 2 );
         $this->loader->add_filter( 'wpcf7_validate_easimagecaptcha', $this->public, 'validate_easimagecaptcha', 5, 2 );
 
-        /* Compatibility with "Conditional Fields for Contact Form 7" plugin */
-        if ( class_exists( 'CF7CF' ) ) {
-            $this->loader->add_filter( 'wpcf7cf_validate', $this->public, 'validate_easimagecaptcha', 10, 2 );
-        }
+        /**
+         * Compatibility with "Conditional Fields for Contact Form 7" plugin:
+         * restore the errors of the nameless fields of this plugin, if CF7CF rebuilds the validation result.
+         * (Registered always, the filters do nothing without CF7CF, the plugin may be loaded later.)
+         */
+        $this->loader->add_filter( 'wpcf7_validate', $this->public, 'wpcf7_validate_snapshot', 1, 2 );
+        $this->loader->add_filter( 'wpcf7cf_validate', $this->public, 'wpcf7cf_validate', 10, 2 );
 
-        // $this->loader->add_filter( 'wpcf7_validate_easimagecaptcha*', $this->public, 'validate_easimagecaptcha', 5, 2 );
         $this->loader->add_filter( 'wpcf7_validate_easacceptance', $this->public, 'validate_easacceptance', 20, 2 );
+
+        // Rate limit: block visitors after too many failed attempts
+        $this->loader->add_filter( 'wpcf7_validate', $this->public, 'wpcf7_validate_ratelimit', 5, 2 );
+        $this->loader->add_action( 'wpcf7_submit', $this->public, 'wpcf7_submit_ratelimit', 10, 2 );
+
+        // Release the timestamp token lock after the submission (mail sent and token saved)
+        $this->loader->add_action( 'wpcf7_submit', $this->public, 'release_token_locks', 999, 0 );
+        $this->loader->add_action( 'shutdown', $this->public, 'release_token_locks', 10, 0 );
+
+        // Tell the JS to load a new timestamp if it is expired or already used
+        $this->loader->add_filter( 'wpcf7_feedback_response', $this->public, 'wpcf7_feedback_response', 10, 2 );
 
         // DEBUG
         $this->loader->add_action( 'wpcf7_submit', $this->public, 'wpcf7_submit', 20, 2 );

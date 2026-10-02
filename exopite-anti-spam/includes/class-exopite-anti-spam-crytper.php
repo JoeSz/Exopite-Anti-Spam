@@ -19,8 +19,9 @@ class Exopite_Anti_Spam_Crypter {
         $str = '';
         $max = strlen($chars) - 1;
 
+        // random_int: cryptographically secure (mt_rand is predictable), this is the encryption key.
         for ($i=0; $i < $length; $i++)
-        $str .= $chars[mt_rand(0, $max)];
+        $str .= $chars[random_int(0, $max)];
 
         return $str;
     }
@@ -49,16 +50,25 @@ class Exopite_Anti_Spam_Crypter {
         $hash_algo  = 'sha256';
         $sha2len    = 32;
         $ivlen = openssl_cipher_iv_length($cipher);
+
+        // Missing or too short (manipulated) data: no openssl warnings, just invalid.
+        if ( ! is_string( $encrypted_string ) || strlen( $encrypted_string ) <= ( $ivlen + $sha2len ) ) {
+            return false;
+        }
+
         $iv = substr($encrypted_string, 0, $ivlen);
         $hmac = substr($encrypted_string, $ivlen, $sha2len);
         $ciphertext_raw = substr($encrypted_string, $ivlen+$sha2len);
-        $original_plaintext = openssl_decrypt($ciphertext_raw, $cipher, $encryption_key, $options, $iv);
         $calcmac = hash_hmac($hash_algo, $ciphertext_raw, $encryption_key, true);
-        if(function_exists('hash_equals')) {
-            if (hash_equals($hmac, $calcmac)) return $original_plaintext;
-        } else {
-            if ($this->hash_equals_custom($hmac, $calcmac)) return $original_plaintext;
+
+        // Check the HMAC first, decrypt only authentic data.
+        $valid = function_exists('hash_equals') ? hash_equals($hmac, $calcmac) : $this->hash_equals_custom($hmac, $calcmac);
+
+        if ( ! $valid ) {
+            return false;
         }
+
+        return openssl_decrypt($ciphertext_raw, $cipher, $encryption_key, $options, $iv);
     }
 
     /**

@@ -557,3 +557,135 @@ msgstr "Unbekannter Aktualisierungsprüfer-Status \"%s\""
 #: vendor/plugin-update-checker/Puc/v4p8/Vcs/PluginUpdateChecker.php:98
 msgid "There is no changelog available."
 msgstr "Es ist kein Änderungsbericht verfügbar."
+
+#: public/class-exopite-anti-spam-public.php
+msgid "Your session has timed out. Please submit the form again."
+msgstr "Ihre Sitzung ist abgelaufen. Bitte senden Sie das Formular erneut ab."
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Min (seconds):"
+msgstr "Min. (Sekunden):"
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Max (minutes):"
+msgstr "Max. (Minuten):"
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Timestamp"
+msgstr "Zeitstempel"
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Adds a hidden, encrypted timestamp to the form. On submission the plugin checks the time elapsed since the form was displayed: if it is less than the minimum (seconds) or more than the maximum (minutes) set below, the submission is rejected, because a bot \"types\" much faster than a human. If the time has expired, a new timestamp is loaded automatically and the visitor can submit the form again without losing the entered data."
+msgstr "Fügt dem Formular einen versteckten, verschlüsselten Zeitstempel hinzu. Beim Absenden prüft das Plugin die Zeit seit der Anzeige des Formulars: Ist sie kürzer als das Minimum (Sekunden) oder länger als das Maximum (Minuten), die unten eingestellt sind, wird die Übermittlung abgelehnt, da ein Bot viel schneller „tippt“ als ein Mensch. Ist die Zeit abgelaufen, wird automatisch ein neuer Zeitstempel geladen und der Besucher kann das Formular erneut absenden, ohne die eingegebenen Daten zu verlieren."
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Honeypot"
+msgstr "Honeypot"
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Adds an extra field to the form, which is invisible for humans, but bots usually fill it out. If the field is not empty, the submission is rejected. The field is placed at a random location in the form, so it is harder for spam bots to detect it."
+msgstr "Fügt dem Formular ein zusätzliches Feld hinzu, das für Menschen unsichtbar ist, von Bots aber meistens ausgefüllt wird. Ist das Feld nicht leer, wird die Übermittlung abgelehnt. Das Feld wird an einer zufälligen Stelle im Formular platziert, damit Spam-Bots es schwerer erkennen."
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Bad/spam words filtering"
+msgstr "Filterung von schlechten/Spam-Wörtern"
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Spam messages often contain words like \"viagra\" or \"vicodin\". The plugin searches these words in text and textarea fields, if any is found, the submission is rejected. Location of the word list:"
+msgstr "Spam-Nachrichten enthalten oft Wörter wie „Viagra“ oder „Vicodin“. Das Plugin sucht diese Wörter in Text- und Textarea-Feldern, wird eines gefunden, wird die Übermittlung abgelehnt. Speicherort der Wortliste:"
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "AJAX loading"
+msgstr "Laden über AJAX"
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Loads the image captcha and the timestamp via AJAX, so they are not cached by caching plugins. Recommended if the page is cached. Visitors with JavaScript disabled can not send the form."
+msgstr "Lädt das Bild-Captcha und den Zeitstempel über AJAX, damit sie nicht von Caching-Plugins zwischengespeichert werden. Empfohlen, wenn die Seite gecacht wird. Besucher mit deaktiviertem JavaScript können das Formular nicht absenden."
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Acceptance JavaScript bot detection"
+msgstr "JavaScript-Boterkennung bei der Zustimmung"
+
+#: admin/class-exopite-anti-spam-admin.php
+#, php-format
+msgid "When the acceptance checkbox is clicked, the plugin requests a single use token via AJAX to check if the visitor is a human. Visitors with JavaScript disabled can not send the form. The %s field is required for this function!"
+msgstr "Beim Anklicken der Zustimmungs-Checkbox fordert das Plugin über AJAX ein einmal verwendbares Token an, um zu prüfen, ob der Besucher ein Mensch ist. Besucher mit deaktiviertem JavaScript können das Formular nicht absenden. Das Feld %s ist für diese Funktion erforderlich!"
+
+#: admin/class-exopite-anti-spam-admin.php
+#, php-format
+msgid "In order to %1$s work, Contact Form 7 needs to be installed and activated. %2$s"
+msgstr "Damit %1$s funktioniert, muss Contact Form 7 installiert und aktiviert sein. %2$s"
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Install Now."
+msgstr "Jetzt installieren."
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Spam messages often contain words like \"viagra\" or \"vicodin\". The plugin searches these words in text and textarea fields, if any is found, the submission is rejected. Own words can be added on the \"Blacklist\" settings page (Contact menu)."
+msgstr "Spam-Nachrichten enthalten oft Wörter wie „Viagra“ oder „Vicodin“. Das Plugin sucht diese Wörter in Text- und Textarea-Feldern, wird eines gefunden, wird die Übermittlung abgelehnt. Eigene Wörter können auf der Einstellungsseite „Blacklist“ (Menü Formulare) hinzugefügt werden."
+
+#: admin/partials/exopite-anti-spam-admin-display.php
+msgid "Own spam words"
+msgstr "Eigene Spam-Wörter"
+
+#: admin/partials/exopite-anti-spam-admin-display.php
+msgid "One word or phrase per line, plain text, not case-sensitive. These words are checked in addition to the built-in list in text and textarea fields, if the bad/spam words filtering is activated in the form (\"Anti Spam\" tab). They are stored in the database, so plugin updates do not overwrite them."
+msgstr "Ein Wort oder eine Wortgruppe pro Zeile, als einfacher Text, Groß-/Kleinschreibung wird nicht beachtet. Diese Wörter werden zusätzlich zur eingebauten Liste in Text- und Textarea-Feldern geprüft, wenn die Filterung von schlechten/Spam-Wörtern im Formular (Reiter „Anti-Spam“) aktiviert ist. Sie werden in der Datenbank gespeichert und daher bei Plugin-Updates nicht überschrieben."
+
+#: admin/partials/exopite-anti-spam-admin-display.php
+msgid "Logging"
+msgstr "Protokollierung"
+
+#: admin/partials/exopite-anti-spam-admin-display.php
+msgid "Logging is enabled. Log directory:"
+msgstr "Die Protokollierung ist aktiviert. Protokollverzeichnis:"
+
+#: admin/partials/exopite-anti-spam-admin-display.php
+msgid "Logging is disabled. To enable it, add the following line to wp-config.php:"
+msgstr "Die Protokollierung ist deaktiviert. Um sie zu aktivieren, fügen Sie folgende Zeile in die wp-config.php ein:"
+
+#: admin/partials/exopite-anti-spam-admin-display.php
+#, php-format
+msgid "Log files older than %d days are deleted automatically. Names, e-mail addresses, phone numbers and street addresses are masked in the log."
+msgstr "Protokolldateien, die älter als %d Tage sind, werden automatisch gelöscht. Namen, E-Mail-Adressen, Telefonnummern und Straßenadressen werden im Protokoll maskiert."
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Limit failed attempts"
+msgstr "Fehlversuche begrenzen"
+
+#: admin/class-exopite-anti-spam-admin.php
+#, php-format
+msgid "After %1$d failed attempts (e.g. wrong image captcha, honeypot, token error) within %2$d minutes, the IP address of the visitor is blocked for %3$d minutes. This prevents bots from guessing the image captcha. The IP address is only stored as a hash in a temporary entry. Deactivate this, if the website is behind a proxy or CDN, which does not pass the IP address of the visitors (all visitors would have the same IP address)."
+msgstr "Nach %1$d Fehlversuchen (z. B. falsches Bild-Captcha, Honeypot, Token-Fehler) innerhalb von %2$d Minuten wird die IP-Adresse des Besuchers für %3$d Minuten gesperrt. Das verhindert, dass Bots das Bild-Captcha erraten. Die IP-Adresse wird nur als Hash in einem temporären Eintrag gespeichert. Deaktivieren Sie diese Funktion, wenn die Website hinter einem Proxy oder CDN läuft, der die IP-Adresse der Besucher nicht weitergibt (alle Besucher hätten dann dieselbe IP-Adresse)."
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Activate limit of failed attempts"
+msgstr "Begrenzung der Fehlversuche aktivieren"
+
+#: public/class-exopite-anti-spam-public.php
+msgid "Too many failed attempts. Please try again in a few minutes."
+msgstr "Zu viele Fehlversuche. Bitte versuchen Sie es in einigen Minuten erneut."
+
+#: admin/partials/exopite-anti-spam-admin-display.php
+msgid "Logging is enabled, but the log directory could not be created. Please check the write permissions of the uploads directory."
+msgstr "Die Protokollierung ist aktiviert, aber das Protokollverzeichnis konnte nicht erstellt werden. Bitte prüfen Sie die Schreibrechte des Upload-Verzeichnisses."
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Image Captcha"
+msgstr "Bild-Captcha"
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Image captcha form-tag generator"
+msgstr "Formular-Tag-Generator für das Bild-Captcha"
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Generates a form-tag for an image captcha: the visitor has to select the named icons. Further anti spam settings of the form are in the \"Anti Spam\" tab."
+msgstr "Erzeugt ein Formular-Tag für ein Bild-Captcha: Der Besucher muss die genannten Symbole auswählen. Weitere Anti-Spam-Einstellungen des Formulars finden Sie im Reiter „Anti-Spam“."
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Number of icons (2-10)"
+msgstr "Anzahl der Symbole (2–10)"
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Icons to select (less than the number of icons)"
+msgstr "Auszuwählende Symbole (weniger als die Anzahl der Symbole)"

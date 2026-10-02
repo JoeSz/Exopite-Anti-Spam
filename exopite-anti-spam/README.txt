@@ -2,8 +2,8 @@
 Contributors: JoeSz
 Donate link: https://www.joeszalai.org
 Tags: comments, spam
-Requires at least: 4.7
-Tested up to: 5.5.3
+Requires at least: 5.3
+Tested up to: 7.1
 Requires PHP: 7.0
 Stable tag: 4.7
 License: GPLv2 or later
@@ -21,14 +21,18 @@ The plugin adds a timestamp, a honeypot with random location, token matching, ba
 
 ## Features
 * GDPR compliant
-* Simple to use settings page for each contact from
+* Simple to use settings page for each contact form
 * Text and error messages are translatable
 * New image CAPTCHA each time form loads or submitted
 * Customizable icon amount
 * Customizable selection amount
 * Loads with Ajax so as not to be cached by caching plugins
 * Hidden honeypot field with a random position
-* Timestamp against bots (min 5 sec max 5 min)
+* Timestamp against bots (min and max time can be set for each form)
+* Single use tokens (image captcha, acceptance, timestamp)
+* Limit of failed attempts per visitor
+* Own spam words on the settings page
+* Optional logging with masked personal data
 * Token matching
 * Bad/spam word filtering
 * Honeypot with random location
@@ -36,13 +40,16 @@ The plugin adds a timestamp, a honeypot with random location, token matching, ba
 
 
 ### GDPR compliant
-The plugin does not use session and/or cookies nor save any private data.
+The plugin does not use sessions or cookies.
+* To prevent the reuse of tokens, the used tokens are stored with the submission time, the form ID and the user ID of logged in users (no IP address) for max. 31 days.
+* The limit of failed attempts stores only a hash of the IP address in a temporary entry (max. 30 minutes).
+* Logging is disabled by default. If it is enabled, the log files contain the IP address and the submitted data (names, e-mail addresses, phone numbers and street addresses are masked). Log files are deleted after 30 days.
 
-### Simple to use settings page for each contact from
+### Simple to use settings page for each contact form
 You can turn on/off features in each form.
 
 ### Text and error messages are translatable
-Texts and error messages can be translated into any language, so -in this was- they can be personalized.
+Texts and error messages can be translated into any language, so -in this way- they can be personalized.
 
 ### Customizable icon and selection amount
 You can customize the amount of icons to display and the icons to select.
@@ -60,7 +67,7 @@ Basically, it's a extra form field to detect whether the form filled by a genuin
 The plugin also display the honeypot field in the form in a random location. Keep moving it around between the valid fields to prevent the spam-bot writer to detect the field easily.
 
 ### Timestamp
-The plugin also apply a timestamp as a hidden input on the form to ensure the minimum and maximum age of the "session". On submission, the plugin will compare the submitted timestamp with the timestamp when the form was displayed. If it is more than 5 minutes or less than 5 seconds, then it is very likely an automated bot/script, because a bot 'types' much faster than a human.
+The plugin also apply a timestamp as a hidden input on the form to ensure the minimum and maximum age of the "session". On submission, the plugin will compare the submitted timestamp with the timestamp when the form was displayed. If it is more than the maximum or less than the minimum time (can be set for each form, default: 2 seconds and 10 minutes), then it is very likely an automated bot/script, because a bot 'types' much faster than a human.
 
 ### Token matching
 The plugin will generate an anonymous "token" on each form request, this is essentially a unique secret code. This token will be encrypted with a random salt and also is going to be applied as a hidden input on the form when it is generated in the browser. After the submission of the form, first the token will be checked against the database and then stored for a months. What this does is ensure that, on every submission of the form, is your form and not some automated bot/script try to submission the from a different server. It also ensure that, every form used only one time. Spammer can download the form and submit it multiple times.
@@ -104,8 +111,48 @@ The plugin allows you to filter certain email addresses and domains.
 
 == Changelog ==
 
+= 20261002 =
+* New: Contact Form 7 is a required plugin ("Requires Plugins" header, WordPress 6.5+): Anti Spam can only be activated if CF7 is active, CF7 can not be deactivated while Anti Spam is active
+* New: message on the settings page if the log directory can not be created (with German translation)
+* Fix: forms without image captcha failed with "Conditional Fields for Contact Form 7" active ("Please make your selection.")
+* Fix: with "Conditional Fields for Contact Form 7", errors of the anti spam fields are kept if the form has hidden groups, fields inside hidden groups are skipped
+* Fix: "image captcha" button in the Contact Form 7 form editor (tag generator for CF7 6+)
+* Fix: log entries and log file names use the WordPress timezone (were UTC)
+* Fix: the log directory is created when the "Blacklist" settings page is opened with logging enabled, so the real path is shown (was only a placeholder until the first log entry)
+* Fix: no PHP fatal error in the captcha AJAX reload if Contact Form 7 was removed without the plugins page (e.g. via FTP)
+* Docs: disclaimer.txt renamed (was disclamer.txt), typos fixed, liability clause for applicable law added
+* Docs: README license (GPLv2 or later), GDPR and timestamp description updated, "Requires at least: 5.3", "Tested up to: 7.1"
+* Docs: README.md updated (features, developer filters, changelog), LICENSE (GPLv2) added
+
+= 20261001 =
+* Security: shortcode injection in the AJAX form loading fixed
+* Security: image captcha, acceptance and timestamp tokens are single use and expire, also with parallel requests (MySQL lock)
+* Security: encryption key generated with a cryptographically secure random generator, HMAC is checked before decryption
+* New: limit failed attempts per visitor (IP hash), can be deactivated in the "Anti Spam" tab of each form
+* New: captcha icons have a slightly different SVG markup on every render (invisible for humans)
+* New: own spam words on the "Blacklist" settings page
+* New: logging can be enabled in wp-config.php (EXOPITE_ANTI_SPAM_LOG), logs in wp-content/uploads with random directory name, personal data masked, deleted after 30 days
+* Fix: an expired or used timestamp is reloaded automatically, the visitor can submit again without losing the entered data
+* Fix: fatal error with "choose:1" or manipulated captcha data, no PHP warnings with manipulated requests
+* Fix: optional e-mail field, case-insensitive blacklist
+* Fix: settings of multiple forms on one page, validation runs only if the function is enabled
+* Fix: bad/spam words filtering disabled by default if the form settings were never saved, "[url]" entry of the word list
+* Fix: [contact-form-7-ajax] with Contact Form 7 5.4+
+* Fix: admin output escaped, texts translatable (German translation)
+* Accessibility: honeypot hidden for screen readers
+* Privacy: IP addresses are not stored in the token table
+* Uninstall: token table and logs are removed (settings are kept, see uninstall.php)
+* Remove: Plugin Update Checker (updates only manually)
+
 = 20260519 =
-* Allow to override honeypot and timestamp defalults with PHP (Hook)
+* Allow to override honeypot and timestamp defaults with PHP (Hook)
+
+= 20230203 =
+* Compatibility update for CF7 5.7.3
+* Change "Timestamp" from 5 seconds to 3 seconds. Some user save forms in browser.
+
+= 20220620 =
+* Better error messages and logging.
 
 = 20201127 =
 * Fix: The image captcha creates a PHP error if only one icon needs to be selected.
@@ -122,17 +169,17 @@ The plugin allows you to filter certain email addresses and domains.
 
 == License ==
 
-The GPL license of Exopite Multifilter grants you the right to use, study, share (copy), modify and (re)distribute the software, as long as these license terms are retained.
+The GPL license of Exopite Anti Spam grants you the right to use, study, share (copy), modify and (re)distribute the software, as long as these license terms are retained.
 
 == SUPPORT/UPDATES ==
 
-If you use my program(s), I would **greatly appreciate it if you kindly give me some suggestions/feedback**. If you solve some issue or fix some bugs or add a new feature, please share with me or mke a pull request. (But I don't have to agree with you or necessarily follow your advice.)<br/>
+If you use my program(s), I would **greatly appreciate it if you kindly give me some suggestions/feedback**. If you solve some issue or fix some bugs or add a new feature, please share with me or make a pull request. (But I don't have to agree with you or necessarily follow your advice.)<br/>
 **Before open an issue** please read the readme (if any :) ), use google and your brain to try to solve the issue by yourself. After all, Github is for developers.<br/>
 My **updates will be irregular**, because if the current stage of the program fulfills all of my needs or I do not encounter any bugs, then I have nothing to do.<br/>
 **I provide no support.** I wrote these programs for myself. For fun. For free. In my free time. It does not have to work for everyone. However, that does not mean that I do not want to help.<br/>
 I've always tested my codes very hard, but it's impossible to test all possible scenarios. Most of the problem could be solved by a simple google search in a matter of minutes. I do the same thing if I download and use a plugin and I run into some errors/bugs.
 
-== DISCLAMER ==
+== DISCLAIMER ==
 
-NO WARRANTY OF ANY KIND! USE THIS SOFTWARES AND INFORMATIONS AT YOUR OWN RISK! READ DISCLAMER.TXT! https://www.joeszalai.org/disclaimer/ <br />
-License: GNU General Public License v3
+NO WARRANTY OF ANY KIND! USE THIS SOFTWARE AND INFORMATION AT YOUR OWN RISK! READ DISCLAIMER.TXT! https://www.joeszalai.org/disclaimer/ <br />
+License: GNU General Public License v2 or later

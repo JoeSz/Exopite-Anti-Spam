@@ -66,7 +66,7 @@
 }
 .wpcf7-form-control.wpcf7-acceptance.loading::after,
 .eas-image-selector.loading::after {
-    content: url('/wp-includes/images/spinner-2x.gif');
+    /* content (spinner image) is added inline from PHP, see enqueue_styles() */
     position: absolute;
     left: 0;
     right: 0;

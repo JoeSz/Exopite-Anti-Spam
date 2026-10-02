@@ -23,6 +23,12 @@
 class Exopite_Anti_Spam_Activator {
 
 	/**
+	 * Increase on every change of the token table schema.
+	 * 2: type 'captcha' (single use image captcha tokens), index on token.
+	 */
+	const DB_VERSION = '2';
+
+	/**
 	 * Short Description. (use period)
 	 *
 	 * Long Description.
@@ -43,8 +49,9 @@ class Exopite_Anti_Spam_Activator {
             submit_user_id SMALLINT,
             cf7_id SMALLINT,
             token VARCHAR(64),
-            type enum('acceptance', 'sent') DEFAULT NULL,
-            PRIMARY KEY  (id)
+            type enum('acceptance','sent','captcha') DEFAULT NULL,
+            PRIMARY KEY  (id),
+            KEY token (token)
         ) $charset_collate;";
 
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
@@ -56,6 +63,20 @@ class Exopite_Anti_Spam_Activator {
          * @link https://code.tutsplus.com/tutorials/custom-database-tables-maintaining-the-database--wp-28455
          */
         dbDelta( $sql );
+
+        update_option( 'exopite_anti_spam_db_version', self::DB_VERSION );
+
+    }
+
+    /**
+     * The activation hook does not run on plugin updates (and only on the main site on multisite),
+     * so the table is created/updated here if the schema version changed.
+     */
+    public static function maybe_update_db() {
+
+        if ( get_option( 'exopite_anti_spam_db_version' ) !== self::DB_VERSION ) {
+            self::activate();
+        }
 
     }
 

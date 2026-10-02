@@ -54,16 +54,28 @@
             plugin.$element.trigger("easSetElementsBefore", [plugin, response]);
 
             /**
+             * CF7 5.4+: wpcf7.init( formElement ), older versions: wpcf7.initForm( $form ).
              * @link https://wordpress.org/support/topic/init-function-wpcf7initform/
              */
-            var $form = plugin.$element.find('.wpcf7 > form');
+            $form = plugin.$element.find('.wpcf7 > form');
 
-            wpcf7.initForm( $form );
-            if ( wpcf7.cached ) {
-               wpcf7.refill( $form );
+            if (typeof wpcf7 !== 'undefined') {
+                if (typeof wpcf7.init === 'function') {
+                    $form.each(function () {
+                        wpcf7.init(this);
+                    });
+                } else if (typeof wpcf7.initForm === 'function') {
+                    wpcf7.initForm($form);
+                    if (wpcf7.cached && typeof wpcf7.refill === 'function') {
+                        wpcf7.refill($form);
+                    }
+                }
             }
 
-            wpcf7cf.initForm($form);
+            // "Conditional Fields for Contact Form 7" plugin, only if installed.
+            if (typeof wpcf7cf !== 'undefined' && typeof wpcf7cf.initForm === 'function') {
+                wpcf7cf.initForm($form);
+            }
 
             $form.exopiteAntiSpam();
 
@@ -132,7 +144,7 @@
 
             plugin.ajaxUrl = plugin.$element.find('.eas-ajax-url').data('ajax-url');
 
-            if (!plugin.ajaxUrl.length) {
+            if (!plugin.ajaxUrl || !plugin.ajaxUrl.length) {
                 return;
             }
 
@@ -155,10 +167,19 @@
 
             plugin.$element.parents('.wpcf7').on('wpcf7mailsent', function (e) {
                 plugin.getElements(true, true);
+                plugin.refreshAcceptanceToken();
             });
 
-            plugin.$element.parents('.wpcf7').on('wpcf7invalid', function (e) {
-                plugin.getElements(false, true);
+            /**
+             * Image captcha and acceptance tokens are single use, load new ones after every unsuccessful submission.
+             * The timestamp is only reloaded if the server says it is expired or already used
+             * (otherwise the minimum time would start again).
+             */
+            plugin.$element.parents('.wpcf7').on('wpcf7invalid wpcf7spam wpcf7mailfailed', function (e) {
+                var detail = (e.originalEvent && e.originalEvent.detail) ? e.originalEvent.detail : e.detail;
+                var refreshTimestamp = !!(detail && detail.apiResponse && detail.apiResponse.eas_refresh_timestamp);
+                plugin.getElements(refreshTimestamp, true);
+                plugin.refreshAcceptanceToken();
             });
 
             plugin.$element.find('.wpcf7-acceptance').on('mousemove keypress', function (e) {
@@ -198,6 +219,17 @@
                     console.log( 'Error: ' + xhr.responseText );
                 },
             });
+        },
+        refreshAcceptanceToken: function () {
+            var plugin = this;
+            if (!plugin.$acceptanceToken.length) {
+                return;
+            }
+            plugin.$acceptanceToken.val('');
+            // Checkbox still checked (e.g. invalid submission): get a new token right away.
+            if (plugin.$acceptance.is(':checked') && plugin.movedOrPressed) {
+                plugin.getAcceptanceToken();
+            }
         },
         setAcceptanceToken: function (response, status, plugin) {
             plugin.$acceptanceToken.val(response)
@@ -248,7 +280,6 @@
                 'exanspselAuth': exanspselAuth,
                 'timestamp': timestamp,
                 'eas_cf7_ajax': true,
-                // 'nonce': 'nonce-key',
             };
 
             plugin.doAjax(dataJSON, plugin.processElements);
@@ -277,6 +308,12 @@
         $('.wpcf7-form').exopiteAntiSpam();
 
         $('.eas-cf7-shortcode').on('easSetElementsAfter', function (event, plugin, response){
+
+            // "Drag and Drop Multiple File Upload - Contact Form 7" plugin, only if installed.
+            if (typeof dnd_cf7_uploader === 'undefined' || typeof $.fn.CodeDropz_Uploader !== 'function') {
+                return;
+            }
+
             var TextOJB = dnd_cf7_uploader.drag_n_drop_upload;
             plugin.$element.find('.wpcf7-drag-n-drop-file').CodeDropz_Uploader({
                 'color'				:	'#fff',

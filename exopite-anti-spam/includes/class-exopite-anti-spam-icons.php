@@ -18,8 +18,102 @@ class Exopite_Anti_Spam_Icons {
     public function __construct() {
 
         $this->icons = $this->set_icons();
-        // $this->count = count( $this->icons );
 
+    }
+
+    /**
+     * Make the SVG markup a little different on every render, invisible for humans.
+     * Bots can not identify the icons by comparing the markup with a stored list
+     * (the markup of an icon was always the same), they would need to render and compare images.
+     *
+     * - every number of the path is moved by max. +/- 0.25 unit (viewBox is ~1800 units, icon is ~50px)
+     *   and formatted with random precision,
+     * - the icon is wrapped in a group with a tiny random rotation, scale and offset.
+     */
+    public function randomize_svg( $svg ) {
+
+        $randomized = preg_replace_callback( '/(\sd=")([^"]+)(")/', function( $matches ) {
+            return $matches[1] . $this->randomize_path( $matches[2] ) . $matches[3];
+        }, $svg );
+
+        if ( null === $randomized ) {
+            return $svg;
+        }
+
+        if ( preg_match( '/viewbox="\s*([-\d.]+)[\s,]+([-\d.]+)[\s,]+([-\d.]+)[\s,]+([-\d.]+)\s*"/i', $randomized, $viewbox ) ) {
+
+            $width = (float) $viewbox[3];
+            $height = (float) $viewbox[4];
+            $center_x = (float) $viewbox[1] + $width / 2;
+            $center_y = (float) $viewbox[2] + $height / 2;
+
+            // Scale down a little, so the rotated icon is not clipped.
+            $angle = mt_rand( -200, 200 ) / 100;
+            $scale = mt_rand( 940, 980 ) / 1000;
+            $offset_x = $width * mt_rand( -50, 50 ) / 10000;
+            $offset_y = $height * mt_rand( -50, 50 ) / 10000;
+
+            $transform = sprintf(
+                'translate(%s %s) rotate(%s %s %s) translate(%s %s) scale(%s) translate(%s %s)',
+                $this->format_number( $offset_x ), $this->format_number( $offset_y ),
+                $this->format_number( $angle ), $this->format_number( $center_x ), $this->format_number( $center_y ),
+                $this->format_number( $center_x ), $this->format_number( $center_y ),
+                $this->format_number( $scale ),
+                $this->format_number( -$center_x ), $this->format_number( -$center_y )
+            );
+
+            $grouped = preg_replace( '/(<svg\b[^>]*>)(.*)(<\/svg>)/s', '$1<g transform="' . $transform . '">$2</g>$3', $randomized );
+
+            if ( null !== $grouped ) {
+                $randomized = $grouped;
+            }
+
+        }
+
+        return $randomized;
+    }
+
+    /**
+     * Arc commands (flags must stay 0/1) are not changed, the built-in icons do not use them.
+     */
+    public function randomize_path( $path ) {
+
+        if ( ! preg_match_all( '/([MmLlHhVvCcSsQqTtAaZz])([^MmLlHhVvCcSsQqTtAaZz]*)/', $path, $segments, PREG_SET_ORDER ) ) {
+            return $path;
+        }
+
+        $randomized = '';
+
+        foreach ( $segments as $segment ) {
+
+            $command = $segment[1];
+
+            if ( 'A' === strtoupper( $command ) || 'Z' === strtoupper( $command ) ) {
+                $randomized .= $command . $segment[2];
+                continue;
+            }
+
+            preg_match_all( '/[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?/', $segment[2], $numbers );
+
+            $values = array();
+            foreach ( $numbers[0] as $number ) {
+                $values[] = $this->format_number( (float) $number + mt_rand( -25, 25 ) / 100 );
+            }
+
+            $randomized .= $command . implode( ' ', $values );
+        }
+
+        return $randomized;
+    }
+
+    /**
+     * Random precision (1-3 decimals), without trailing zeros.
+     */
+    public function format_number( $number ) {
+
+        $formatted = rtrim( rtrim( number_format( $number, mt_rand( 1, 3 ), '.', '' ), '0' ), '.' );
+
+        return ( '-0' === $formatted || '' === $formatted ) ? '0' : $formatted;
     }
 
     public function get_icons( $amount = 3 ) {
