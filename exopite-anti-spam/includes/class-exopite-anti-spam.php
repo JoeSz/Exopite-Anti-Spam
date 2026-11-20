@@ -75,6 +75,41 @@ class Exopite_Anti_Spam {
     public $fields;
 
     /**
+     * Validation of the anti spam fields.
+     *
+     * @var Exopite_Anti_Spam_Public_Validate_Fields
+     */
+    public $validate;
+
+    /**
+     * Encryption (key, encrypt/decrypt).
+     *
+     * @var Exopite_Anti_Spam_Crypter
+     */
+    public $crypter;
+
+    /**
+     * Single use tokens.
+     *
+     * @var Exopite_Anti_Spam_Token
+     */
+    public $tokens;
+
+    /**
+     * Page cache detection.
+     *
+     * @var Exopite_Anti_Spam_Page_Cache
+     */
+    public $page_cache;
+
+    /**
+     * Rate limit (failed attempts per visitor).
+     *
+     * @var Exopite_Anti_Spam_Public_Rate_Limiter
+     */
+    public $ratelimiter;
+
+    /**
      * Store plugin admin class to allow public access.
      *
      * @since    20180622
@@ -110,6 +145,11 @@ class Exopite_Anti_Spam {
         $this->honeypot_name = apply_filters( 'exopite_anti_spam_honeypot_name', $this->honeypot_name );
 
         $this->load_dependencies();
+
+        $this->crypter = new Exopite_Anti_Spam_Crypter( $this->plugin_name );
+        $this->tokens = new Exopite_Anti_Spam_Token( $this->main );
+        $this->page_cache = new Exopite_Anti_Spam_Page_Cache( $this->plugin_name, $this->main );
+
         $this->set_locale();
         $this->define_admin_hooks();
         $this->define_public_hooks();
@@ -159,11 +199,22 @@ class Exopite_Anti_Spam {
 
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-exopite-anti-spam-public-fields.php';
 
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-exopite-anti-spam-public-validate-fields.php';
+
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-exopite-anti-spam-public-rate-limiter.php';
+
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-icons.php';
 
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-crytper.php';
 
-        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-ip-address.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-token.php';
+
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-page-cache.php';
+
+        // Global class name without prefix: other plugins may contain the same class.
+        if ( ! class_exists( 'RemoteAddress' ) ) {
+            require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-ip-address.php';
+        }
 
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-activator.php';
 
@@ -209,6 +260,12 @@ class Exopite_Anti_Spam {
 
         $this->loader->add_action( 'admin_init', $this->admin, 'check_dependencies' );
 
+        // Page cache: enable "AJAX loading" on installation, notice if a cache is activated later.
+        $this->loader->add_action( 'admin_init', $this->page_cache, 'check' );
+        $this->loader->add_action( 'admin_init', $this->page_cache, 'handle_notice' );
+        $this->loader->add_action( 'admin_notices', $this->page_cache, 'admin_notices' );
+        $this->loader->add_filter( 'removable_query_args', $this->page_cache, 'removable_query_args' );
+
         // From here added
         // Save/Update our plugin options
         $this->loader->add_action( 'admin_init', $this->admin, 'options_update' );
@@ -218,7 +275,8 @@ class Exopite_Anti_Spam {
 
         $this->loader->add_filter( 'wpcf7_admin_init', $this->admin, 'wpcf7_admin_init', 55 );
         $this->loader->add_action( 'wpcf7_editor_panels', $this->admin, 'wpcf7_editor_panels', 10, 1 );
-        $this->loader->add_action( 'wpcf7_save_contact_form', $this->admin, 'wpcf7_save_contact_form', 10, 1);
+        // After saving: a new form has an ID only then (wpcf7_save_contact_form runs before the first save).
+        $this->loader->add_action( 'wpcf7_after_save', $this->admin, 'wpcf7_save_contact_form', 10, 1 );
 
 
 
@@ -346,6 +404,8 @@ class Exopite_Anti_Spam {
 
 		$this->public = new Exopite_Anti_Spam_Public( $this->get_plugin_name(), $this->get_version(), $this->main );
 		$this->fields = new Exopite_Anti_Spam_Public_Fields( $this->get_plugin_name(), $this->get_version(), $this->main );
+        $this->validate = new Exopite_Anti_Spam_Public_Validate_Fields( $this->get_plugin_name(), $this->get_version(), $this->main );
+        $this->ratelimiter = new Exopite_Anti_Spam_Public_Rate_Limiter( $this->main );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $this->public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $this->public, 'enqueue_scripts' );
@@ -353,39 +413,42 @@ class Exopite_Anti_Spam {
         // Add field hooks
         $this->loader->add_filter( 'wpcf7_init', $this->fields, 'wpcf7_init', 10, 0 );
         $this->loader->add_filter( 'wpcf7_contact_form', $this->fields, 'wpcf7_contact_form', 10, 2 );
+        // Timestamp and acceptance token as hidden fields, settings for the JS at the end of the form
+        $this->loader->add_filter( 'wpcf7_form_hidden_fields', $this->fields, 'wpcf7_form_hidden_fields', 10, 1 );
+        $this->loader->add_filter( 'wpcf7_form_elements', $this->fields, 'wpcf7_form_elements', 10, 1 );
 
         // Validation hooks
-        $this->loader->add_filter( 'wpcf7_validate', $this->public, 'wpcf7_validate', 30, 2 );
-        $this->loader->add_filter( 'wpcf7_validate_' . $this->honeypot_name, $this->public, 'wpcf7_validate_honeypot', 10, 2 );
-        $this->loader->add_filter( 'wpcf7_validate_eastimestamp', $this->public, 'wpcf7_validate_eastimestamp', 10, 2 );
-        $this->loader->add_filter( 'wpcf7_validate_text', $this->public, 'validate_text_textarea_bad_words', 20, 2 );
-        $this->loader->add_filter( 'wpcf7_validate_text*', $this->public, 'validate_text_textarea_bad_words', 20, 2 );
-        $this->loader->add_filter( 'wpcf7_validate_textarea', $this->public, 'validate_text_textarea_bad_words', 20, 2 );
-        $this->loader->add_filter( 'wpcf7_validate_textarea*', $this->public, 'validate_text_textarea_bad_words', 20, 2 );
-        $this->loader->add_filter( 'wpcf7_validate_email', $this->public, 'validate_text_email_blacklist', 20, 2 );
-        $this->loader->add_filter( 'wpcf7_validate_email*', $this->public, 'validate_text_email_blacklist', 20, 2 );
-        $this->loader->add_filter( 'wpcf7_validate_easimagecaptcha', $this->public, 'validate_easimagecaptcha', 5, 2 );
+        $this->loader->add_filter( 'wpcf7_validate', $this->validate, 'wpcf7_validate', 30, 2 );
+        $this->loader->add_filter( 'wpcf7_validate_' . $this->honeypot_name, $this->validate, 'wpcf7_validate_honeypot', 10, 2 );
+        $this->loader->add_filter( 'wpcf7_validate_text', $this->validate, 'validate_text_textarea_bad_words', 20, 2 );
+        $this->loader->add_filter( 'wpcf7_validate_text*', $this->validate, 'validate_text_textarea_bad_words', 20, 2 );
+        $this->loader->add_filter( 'wpcf7_validate_textarea', $this->validate, 'validate_text_textarea_bad_words', 20, 2 );
+        $this->loader->add_filter( 'wpcf7_validate_textarea*', $this->validate, 'validate_text_textarea_bad_words', 20, 2 );
+        $this->loader->add_filter( 'wpcf7_validate_email', $this->validate, 'validate_text_email_blacklist', 20, 2 );
+        $this->loader->add_filter( 'wpcf7_validate_email*', $this->validate, 'validate_text_email_blacklist', 20, 2 );
+        $this->loader->add_filter( 'wpcf7_validate_easimagecaptcha', $this->validate, 'validate_easimagecaptcha', 5, 2 );
 
         /**
          * Compatibility with "Conditional Fields for Contact Form 7" plugin:
          * restore the errors of the nameless fields of this plugin, if CF7CF rebuilds the validation result.
          * (Registered always, the filters do nothing without CF7CF, the plugin may be loaded later.)
          */
-        $this->loader->add_filter( 'wpcf7_validate', $this->public, 'wpcf7_validate_snapshot', 1, 2 );
-        $this->loader->add_filter( 'wpcf7cf_validate', $this->public, 'wpcf7cf_validate', 10, 2 );
+        $this->loader->add_filter( 'wpcf7_validate', $this->validate, 'wpcf7_validate_snapshot', 1, 2 );
+        $this->loader->add_filter( 'wpcf7cf_validate', $this->validate, 'wpcf7cf_validate', 10, 2 );
 
-        $this->loader->add_filter( 'wpcf7_validate_easacceptance', $this->public, 'validate_easacceptance', 20, 2 );
+        // Bot submissions (honeypot, missing or manipulated encrypted data): status "spam" like Akismet, reCAPTCHA, Turnstile
+        $this->loader->add_filter( 'wpcf7_spam', $this->validate, 'wpcf7_spam', 10, 2 );
 
         // Rate limit: block visitors after too many failed attempts
-        $this->loader->add_filter( 'wpcf7_validate', $this->public, 'wpcf7_validate_ratelimit', 5, 2 );
-        $this->loader->add_action( 'wpcf7_submit', $this->public, 'wpcf7_submit_ratelimit', 10, 2 );
+        $this->loader->add_filter( 'wpcf7_validate', $this->ratelimiter, 'wpcf7_validate', 5, 2 );
+        $this->loader->add_action( 'wpcf7_submit', $this->ratelimiter, 'wpcf7_submit', 10, 2 );
 
         // Release the timestamp token lock after the submission (mail sent and token saved)
-        $this->loader->add_action( 'wpcf7_submit', $this->public, 'release_token_locks', 999, 0 );
-        $this->loader->add_action( 'shutdown', $this->public, 'release_token_locks', 10, 0 );
+        $this->loader->add_action( 'wpcf7_submit', $this->tokens, 'release_locks', 999, 0 );
+        $this->loader->add_action( 'shutdown', $this->tokens, 'release_locks', 10, 0 );
 
         // Tell the JS to load a new timestamp if it is expired or already used
-        $this->loader->add_filter( 'wpcf7_feedback_response', $this->public, 'wpcf7_feedback_response', 10, 2 );
+        $this->loader->add_filter( 'wpcf7_feedback_response', $this->validate, 'wpcf7_feedback_response', 10, 2 );
 
         // DEBUG
         $this->loader->add_action( 'wpcf7_submit', $this->public, 'wpcf7_submit', 20, 2 );
@@ -394,12 +457,11 @@ class Exopite_Anti_Spam {
         $this->loader->add_filter( 'wp_ajax_eap_reload_cf7_fields', $this->fields, 'reload_cf7_fields_ajax' );
         $this->loader->add_filter( 'wp_ajax_nopriv_eap_reload_cf7_fields', $this->fields, 'reload_cf7_fields_ajax' );
 
-        $this->loader->add_filter( 'wp_ajax_eap_get_acceptance_token', $this->public, 'get_acceptance_token' );
-        $this->loader->add_filter( 'wp_ajax_nopriv_eap_get_acceptance_token', $this->public, 'get_acceptance_token' );
+        $this->loader->add_filter( 'wp_ajax_eap_get_acceptance_token', $this->fields, 'get_acceptance_token' );
+        $this->loader->add_filter( 'wp_ajax_nopriv_eap_get_acceptance_token', $this->fields, 'get_acceptance_token' );
 
-        $this->loader->add_shortcode( "contact-form-7-ajax", $this->fields, "contact_form_7_ajax", $priority = 10, $accepted_args = 2 );
-        $this->loader->add_filter( "wp_ajax_eas_get_contact_form_7_ajax", $this->fields, "get_contact_form_7_ajax" );
-        $this->loader->add_filter( "wp_ajax_nopriv_eas_get_contact_form_7_ajax", $this->fields, "get_contact_form_7_ajax" );
+        // Removed [contact-form-7-ajax]: shows the form like [contact-form-7], so existing pages keep working.
+        $this->loader->add_shortcode( 'contact-form-7-ajax', $this->fields, 'contact_form_7_ajax' );
 
         // Mail sent hooks
         $this->loader->add_filter( 'wpcf7_mail_sent', $this->public, 'wpcf7_mail_sent' );

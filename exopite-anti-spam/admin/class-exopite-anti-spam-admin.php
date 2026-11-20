@@ -208,6 +208,9 @@ class Exopite_Anti_Spam_Admin {
 
     public function wpcf7_editor_panel_preview() {
 
+        // Marker: the settings are saved only if this panel was submitted.
+        echo '<input type="hidden" name="eas-settings-panel" value="1" />';
+
         // New (not yet saved) form: no post ID, defaults are used.
         $form_id = isset( $_GET['post'] ) ? intval( $_GET['post'] ) : 0;
         $options = $form_id ? get_post_meta( $form_id, 'exopite-anti-spam' ) : array();
@@ -223,7 +226,7 @@ class Exopite_Anti_Spam_Admin {
         }
 
         // Timestamp
-        $checked = isset( $options[0]['timestamp'] ) ? ( $options[0]['timestamp'] == 'yes' ) : (bool) apply_filters( 'exopite_enable_timestamp', false );
+        $checked = isset( $options[0]['timestamp'] ) ? ( $options[0]['timestamp'] == 'yes' ) : (bool) apply_filters( 'exopite_enable_timestamp', true );
 
         $extra  = '<div class="eas-row eas-timestamp-values" style="display:none;">';
         $extra .= '<div class="eas-col-6">';
@@ -244,7 +247,7 @@ class Exopite_Anti_Spam_Admin {
         );
 
         // Honeypot
-        $checked = isset( $options[0]['honeypot'] ) ? ( $options[0]['honeypot'] == 'yes' ) : (bool) apply_filters( 'exopite_enable_honeypot', false );
+        $checked = isset( $options[0]['honeypot'] ) ? ( $options[0]['honeypot'] == 'yes' ) : (bool) apply_filters( 'exopite_enable_honeypot', true );
 
         $this->panel_switch_row(
             'eas-activate-honeypot',
@@ -265,13 +268,24 @@ class Exopite_Anti_Spam_Admin {
             $checked
         );
 
-        // AJAX loading
-        $checked = ( isset( $options[0]['ajaxload'] ) && $options[0]['ajaxload'] == 'yes' );
+        // AJAX loading: default for new forms (settings not saved yet) is "on" if a page cache is active.
+        $caches = $this->main->page_cache->get_plugins();
+        $checked = isset( $options[0]['ajaxload'] ) ? ( $options[0]['ajaxload'] == 'yes' ) : ! empty( $caches );
+
+        $description = esc_html__( 'Loads the image captcha and the timestamp via AJAX, so they are not cached by caching plugins. Recommended if the page is cached. Visitors with JavaScript disabled can not send the form.', 'exopite-anti-spam' );
+
+        if ( $caches ) {
+            /* translators: %s: names of the cache plugins */
+            $description .= '<br><strong>' . esc_html( sprintf( __( 'Active page cache: %s.', 'exopite-anti-spam' ), implode( ', ', $caches ) ) ) . '</strong>';
+            if ( ! $checked ) {
+                $description .= ' <strong style="color:#d63638;">' . esc_html__( 'Please enable "AJAX loading": on cached pages all visitors get the same single use tokens, only the first submission would work.', 'exopite-anti-spam' ) . '</strong>';
+            }
+        }
 
         $this->panel_switch_row(
             'eas-activate-ajaxload',
             __( 'AJAX loading', 'exopite-anti-spam' ),
-            esc_html__( 'Loads the image captcha and the timestamp via AJAX, so they are not cached by caching plugins. Recommended if the page is cached. Visitors with JavaScript disabled can not send the form.', 'exopite-anti-spam' ),
+            $description,
             __( 'Load via AJAX', 'exopite-anti-spam' ),
             $checked
         );
@@ -292,8 +306,8 @@ class Exopite_Anti_Spam_Admin {
         );
 
         // Rate limit
-        $checked = $this->main->public->is_ratelimit_active( isset( $options[0] ) ? $options[0] : false );
-        $ratelimit = $this->main->public->get_ratelimit_settings();
+        $checked = $this->main->ratelimiter->is_active( isset( $options[0] ) ? $options[0] : false );
+        $ratelimit = $this->main->ratelimiter->get_settings();
 
         $this->panel_switch_row(
             'eas-activate-ratelimit',
@@ -324,17 +338,19 @@ class Exopite_Anti_Spam_Admin {
 
     public function wpcf7_save_contact_form( $form ) {
 
-        if ( ! current_user_can( 'manage_options' ) ) {
-            return;
-        }
-
-        if ( ! isset( $_POST ) || empty( $_POST ) ) {
+        // Only if the "Anti Spam" panel was submitted (not on other saves, e.g. duplicate or REST, which would reset the settings).
+        if ( empty( $_POST['eas-settings-panel'] ) ) {
             return;
         }
 
         $post_id = $form->id();
 
         if ( ! $post_id ) return;
+
+        // Same as Contact Form 7: who may edit the form (default: editors and administrators), may change its anti spam settings too.
+        if ( ! current_user_can( 'wpcf7_edit_contact_form', $post_id ) ) {
+            return;
+        }
 
         if ( isset( $_POST['eas-activate-honeypot'] ) ) {
             $honeypot = 'yes';
@@ -425,8 +441,14 @@ class Exopite_Anti_Spam_Admin {
          *
          * @link https://codex.wordpress.org/Function_Reference/add_options_page
          */
+        global $admin_page_hooks;
+
         if ( current_user_can( 'manage_options' ) ) {
-            add_submenu_page('wpcf7', 'Exopite Anti Spam - Blacklist Unwanted Emails - Options', 'Blacklist', 'manage_options', $this->plugin_name, array($this, 'display_plugin_setup_page'));
+
+            // Contact Form 7 6.2+ has the top-level menu "wpcf7-dashboard", older versions "wpcf7"
+            $parent = isset( $admin_page_hooks['wpcf7-dashboard'] ) ? 'wpcf7-dashboard' : 'wpcf7';
+
+            add_submenu_page($parent, 'Exopite Anti Spam - Blacklist Unwanted Emails - Options', 'Blacklist', 'manage_options', $this->plugin_name, array($this, 'display_plugin_setup_page'));
 
         }
 
@@ -455,6 +477,14 @@ class Exopite_Anti_Spam_Admin {
 
         if ( ! is_array( $options ) ) {
             $options = array();
+        }
+
+        /**
+         * The encryption key is saved into the same option (Exopite_Anti_Spam_Crypter::get_key()). On a fresh install the first
+         * key can be created in an admin request, where this sanitize callback runs too: keep it.
+         */
+        if ( isset( $input['token'] ) && is_string( $input['token'] ) && '' !== $input['token'] ) {
+            $options['token'] = $input['token'];
         }
 
         $textarea_fields = array( 'list_of_block_domains', 'list_of_block_emails', 'custom_spam_words' );

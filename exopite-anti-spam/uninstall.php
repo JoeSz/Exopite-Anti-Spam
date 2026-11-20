@@ -45,6 +45,8 @@ function exopite_anti_spam_uninstall_site() {
 
 	$wpdb->query( 'DROP TABLE IF EXISTS `' . $wpdb->prefix . 'eas_cf7_email_tokens`' );
 	delete_option( 'exopite_anti_spam_db_version' );
+	delete_option( 'exopite_anti_spam_page_cache' );
+	delete_option( 'exopite_anti_spam_page_cache_notice' );
 	Exopite_Anti_Spam_Logger::delete_all();
 
 	if ( defined( 'EXOPITE_ANTI_SPAM_UNINSTALL_DELETE_ALL' ) && EXOPITE_ANTI_SPAM_UNINSTALL_DELETE_ALL ) {

@@ -25,8 +25,9 @@ class Exopite_Anti_Spam_Activator {
 	/**
 	 * Increase on every change of the token table schema.
 	 * 2: type 'captcha' (single use image captcha tokens), index on token.
+	 * 3: BIGINT user and form IDs (SMALLINT was max. 32767), index for the clean up.
 	 */
-	const DB_VERSION = '2';
+	const DB_VERSION = '3';
 
 	/**
 	 * Short Description. (use period)
@@ -46,12 +47,13 @@ class Exopite_Anti_Spam_Activator {
             id INT NOT NULL AUTO_INCREMENT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             submit_ip VARCHAR(46),
-            submit_user_id SMALLINT,
-            cf7_id SMALLINT,
+            submit_user_id BIGINT UNSIGNED,
+            cf7_id BIGINT UNSIGNED,
             token VARCHAR(64),
             type enum('acceptance','sent','captcha') DEFAULT NULL,
             PRIMARY KEY  (id),
-            KEY token (token)
+            KEY token (token),
+            KEY type_timestamp (type,timestamp)
         ) $charset_collate;";
 
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );

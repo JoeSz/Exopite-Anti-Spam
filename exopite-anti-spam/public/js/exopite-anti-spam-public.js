@@ -3,128 +3,6 @@
 
     "use strict";
 
-    var pluginName = "exopiteAntiSpamAjax",
-        defaults = {};
-
-    function Plugin(element, options) {
-        this.element = element;
-        this.settings = $.extend({}, defaults, options);
-        this._defaults = defaults;
-        this._name = pluginName;
-        this.init();
-    }
-
-    $.extend(Plugin.prototype, {
-        init: function () {
-            var plugin = this;
-            plugin.buildCache();
-
-            plugin.ajaxUrl = plugin.$element.data('ajax-url');
-
-            if (!plugin.ajaxUrl.length) {
-                return;
-            }
-
-            plugin.bindEvents();
-        },
-        bindEvents: function () {
-            var plugin = this;
-
-            plugin.$element.find('.eas-cf7-shortcode-load').off().on('click' + '.' + plugin._name, function (e) {
-                plugin.ajaxLoad.call(plugin, e);
-            });
-
-        },
-        destroy: function () {
-            this.unbindEvents();
-            this.$element.removeData();
-        },
-        unbindEvents: function () {
-            this.$element.off('.' + this._name);
-        },
-        buildCache: function () {
-            this.$element = $(this.element);
-        },
-        setElements: function (plugin, response) {
-            plugin.$element.html(response);
-            var $form = plugin.$element.find('.wpcf7-form');
-            var action = $form.attr('action').split("#");
-            $form.attr('action', '#' + action[1]);
-
-            plugin.$element.trigger("easSetElementsBefore", [plugin, response]);
-
-            /**
-             * CF7 5.4+: wpcf7.init( formElement ), older versions: wpcf7.initForm( $form ).
-             * @link https://wordpress.org/support/topic/init-function-wpcf7initform/
-             */
-            $form = plugin.$element.find('.wpcf7 > form');
-
-            if (typeof wpcf7 !== 'undefined') {
-                if (typeof wpcf7.init === 'function') {
-                    $form.each(function () {
-                        wpcf7.init(this);
-                    });
-                } else if (typeof wpcf7.initForm === 'function') {
-                    wpcf7.initForm($form);
-                    if (wpcf7.cached && typeof wpcf7.refill === 'function') {
-                        wpcf7.refill($form);
-                    }
-                }
-            }
-
-            // "Conditional Fields for Contact Form 7" plugin, only if installed.
-            if (typeof wpcf7cf !== 'undefined' && typeof wpcf7cf.initForm === 'function') {
-                wpcf7cf.initForm($form);
-            }
-
-            $form.exopiteAntiSpam();
-
-            plugin.$element.trigger("easSetElementsAfter", [plugin, response]);
-
-        },
-        ajaxLoad: function (e) {
-            var plugin = this;
-            e.preventDefault();
-
-            var dataJSON = {
-                'action': 'eas_get_contact_form_7_ajax',
-                'cf7_id': plugin.$element.data('id'),
-                'cf7_title': plugin.$element.data('title'),
-                'eas_cf7_ajax': true,
-            };
-
-            $.ajax({
-                cache: false,
-                type: "POST",
-                url: plugin.ajaxUrl,
-                data: dataJSON,
-                success: function( response ){
-                    plugin.setElements(plugin, response);
-                },
-                error: function( xhr, status, error ) {
-                    console.log( 'Status: ' + xhr.status );
-                    console.log( 'Error: ' + xhr.responseText );
-                },
-            });
-
-        },
-    });
-
-    $.fn[pluginName] = function (options) {
-        return this.each(function () {
-            if (!$.data(this, "plugin_" + pluginName)) {
-                $.data(this, "plugin_" + pluginName, new Plugin(this, options));
-            }
-        });
-    };
-
-})(jQuery, window, document);
-
-
-; (function ($, window, document, undefined) {
-
-    "use strict";
-
     var pluginName = "exopiteAntiSpam",
         defaults = {};
 
@@ -149,9 +27,10 @@
             }
 
             plugin.$exanspselAuth = this.$element.find('.exanspsel-auth');
-            plugin.$timestamp = this.$element.find('.eastimestamp');
+            // Hidden fields of Contact Form 7 (no class or id).
+            plugin.$timestamp = this.$element.find('input[name="eastimestamp"]');
             plugin.$acceptance = this.$element.find('.wpcf7-acceptance input[type="checkbox"]');
-            plugin.$acceptanceToken = this.$element.find('#easacceptance');
+            plugin.$acceptanceToken = this.$element.find('input[name="easacceptance"]');
 
             plugin.bindEvents();
             plugin.ajaxLoad();
@@ -165,6 +44,29 @@
         bindEvents: function () {
             var plugin = this;
 
+            /**
+             * Ignore a second submit (double click, Enter) while the first one is running: the second request
+             * would get "token already used" and its error would replace the "mail sent" message.
+             * Capture phase on the wrapper, so it runs before the submit handler of Contact Form 7.
+             * Contact Form 7 sets data-status="submitting" until the response arrives; after 30 seconds
+             * (e.g. network error, no response) a new submit is allowed again.
+             */
+            var wrapper = plugin.$element.closest('.wpcf7').get(0);
+            if (wrapper && wrapper.addEventListener) {
+                wrapper.addEventListener('submit', function (e) {
+                    if (e.target !== plugin.element) {
+                        return;
+                    }
+                    var now = new Date().getTime();
+                    if (plugin.element.getAttribute('data-status') === 'submitting' && plugin.submittedAt && (now - plugin.submittedAt) < 30000) {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        return;
+                    }
+                    plugin.submittedAt = now;
+                }, true);
+            }
+
             plugin.$element.parents('.wpcf7').on('wpcf7mailsent', function (e) {
                 plugin.getElements(true, true);
                 plugin.refreshAcceptanceToken();
@@ -175,24 +77,33 @@
              * The timestamp is only reloaded if the server says it is expired or already used
              * (otherwise the minimum time would start again).
              */
-            plugin.$element.parents('.wpcf7').on('wpcf7invalid wpcf7spam wpcf7mailfailed', function (e) {
+            plugin.$element.parents('.wpcf7').on('wpcf7invalid wpcf7spam wpcf7mailfailed wpcf7unaccepted wpcf7aborted', function (e) {
                 var detail = (e.originalEvent && e.originalEvent.detail) ? e.originalEvent.detail : e.detail;
                 var refreshTimestamp = !!(detail && detail.apiResponse && detail.apiResponse.eas_refresh_timestamp);
                 plugin.getElements(refreshTimestamp, true);
                 plugin.refreshAcceptanceToken();
             });
 
-            plugin.$element.find('.wpcf7-acceptance').on('mousemove keypress', function (e) {
-                plugin.movedOrPressed = true;
-                plugin.$element.find('.wpcf7-acceptance').off('mousemove keypress');
-            });
-
-            plugin.$acceptance.on('click', function (e) {
-                if ($(this).is(":checked") && plugin.$acceptanceToken.val() == '' && plugin.movedOrPressed) {
-                    plugin.getAcceptanceToken();
+            /**
+             * Acceptance token: only after a real interaction of the visitor with the form (isTrusted: not triggered by a script).
+             * Also for a checkbox which is checked by default ("default:on") and for keyboard, touch and voice control users.
+             */
+            plugin.$element.on('mousemove keydown touchstart focusin click', function (e) {
+                if (!plugin.movedOrPressed && e.originalEvent && e.originalEvent.isTrusted) {
+                    plugin.movedOrPressed = true;
+                    plugin.maybeGetAcceptanceToken();
                 }
-
             });
+
+            plugin.$acceptance.on('change', function (e) {
+                plugin.maybeGetAcceptanceToken();
+            });
+        },
+        maybeGetAcceptanceToken: function () {
+            var plugin = this;
+            if (plugin.movedOrPressed && plugin.$acceptanceToken.length && plugin.$acceptance.is(':checked') && plugin.$acceptanceToken.val() == '' && !plugin.loadingAcceptance) {
+                plugin.getAcceptanceToken();
+            }
         },
         destroy: function () {
             this.unbindEvents();
@@ -211,10 +122,13 @@
                 type: "POST",
                 url: plugin.ajaxUrl,
                 data: dataJSON,
-                success: function (response) {
+                success: function (response, status) {
                     callback(response, status, plugin)
                 },
                 error: function( xhr, status, error ) {
+                    // Allow a new request (e.g. the next click on the acceptance checkbox)
+                    plugin.loadingAcceptance = false;
+                    plugin.$element.find('.loading').removeClass('loading');
                     console.log( 'Status: ' + xhr.status );
                     console.log( 'Error: ' + xhr.responseText );
                 },
@@ -227,16 +141,16 @@
             }
             plugin.$acceptanceToken.val('');
             // Checkbox still checked (e.g. invalid submission): get a new token right away.
-            if (plugin.$acceptance.is(':checked') && plugin.movedOrPressed) {
-                plugin.getAcceptanceToken();
-            }
+            plugin.maybeGetAcceptanceToken();
         },
         setAcceptanceToken: function (response, status, plugin) {
+            plugin.loadingAcceptance = false;
             plugin.$acceptanceToken.val(response)
             plugin.$acceptance.parents('.wpcf7-acceptance').removeClass('loading');
         },
         getAcceptanceToken: function (getTimestamp, getExanspsel) {
             var plugin = this;
+            plugin.loadingAcceptance = true;
             plugin.$acceptance.parents('.wpcf7-acceptance').addClass('loading');
 
             var dataJSON = {
@@ -304,42 +218,7 @@
 
     $(function() {
 
-        $('.eas-cf7-shortcode').exopiteAntiSpamAjax();
         $('.wpcf7-form').exopiteAntiSpam();
-
-        $('.eas-cf7-shortcode').on('easSetElementsAfter', function (event, plugin, response){
-
-            // "Drag and Drop Multiple File Upload - Contact Form 7" plugin, only if installed.
-            if (typeof dnd_cf7_uploader === 'undefined' || typeof $.fn.CodeDropz_Uploader !== 'function') {
-                return;
-            }
-
-            var TextOJB = dnd_cf7_uploader.drag_n_drop_upload;
-            plugin.$element.find('.wpcf7-drag-n-drop-file').CodeDropz_Uploader({
-                'color'				:	'#fff',
-                'ajax_url'			: 	dnd_cf7_uploader.ajax_url,
-                'text'				: 	TextOJB.text,
-                'separator'			: 	TextOJB.or_separator,
-                'button_text'		:	TextOJB.browse,
-                'server_max_error'	: 	TextOJB.server_max_error,
-                'on_success'		:	function( input, progressBar, response ){
-
-                    // Progressbar Object
-                    var progressDetails = $('#' + progressBar, input.parents('.codedropz-upload-wrapper') );
-
-                    // If it's complete remove disabled attribute in button
-                    if( $('.in-progress', input.parents('form') ).length === 0 ) {
-                        setTimeout(function(){ $('input[type="submit"]', input.parents('form')).removeAttr('disabled'); }, 1);
-                    }
-
-                    // Append hidden input field
-                    progressDetails
-                        .find('.dnd-upload-details')
-                            .append('<span><input type="hidden" name="'+ input.attr('data-name') +'[]" value="'+ response.data.path +'/'+ response.data.file +'"></span>');
-                }
-            });
-        });
-
 
     });
 

@@ -16,7 +16,7 @@
  * Plugin Name:       Exopite Anti Spam
  * Plugin URI:        https://www.joeszalai.org/exopite/anti-spam
  * Description:       Anti Spam plugin for Contact Form 7 with timestamp, honeypot (random location), token matching, bad/spam word filtering, email and domain blacklist and an image captcha, eg: [easimagecaptcha easimagecaptcha] or [easimagecaptcha icon:6 choose:3].
- * Version:           20261002
+ * Version:           20261007
  * Author:            Joe Szalai
  * Author URI:        https://www.joeszalai.org
  * License:           GPL-2.0+
@@ -36,13 +36,28 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'EXOPITE_ANTI_SPAM_VERSION', '20261002' );
+define( 'EXOPITE_ANTI_SPAM_VERSION', '20261007' );
 define( 'EXOPITE_ANTI_SPAM_URL', plugin_dir_url( __FILE__ ) );
 define( 'EXOPITE_ANTI_SPAM_PATH', plugin_dir_path( __FILE__ ) );
 define( 'EXOPITE_ANTI_SPAM_FILE', __FILE__ );
 define( 'EXOPITE_ANTI_SPAM_PLUGIN_NAME', 'exopite-anti-spam' );
 define( 'EXOPITE_ANTI_SPAM_PLUGIN_NICE_NAME', 'Exopite Anti-Spam' );
 
+/**
+ * Self-update through Plugin Update Checker 6.0 (vendor/plugin-update-checker).
+ * Switched off: nothing is loaded unless wp-config.php sets
+ * define( 'EXOPITE_ANTI_SPAM_UPDATE_CHECKER', true );
+ * Plugin Update Checker 6.0 requires PHP 7.4, on older PHP versions it is not loaded (the plugin itself works).
+ * The metadata URL is the one the plugin used up to 4.8.
+ */
+if ( defined( 'EXOPITE_ANTI_SPAM_UPDATE_CHECKER' ) && EXOPITE_ANTI_SPAM_UPDATE_CHECKER && version_compare( PHP_VERSION, '7.4', '>=' ) ) {
+	require_once EXOPITE_ANTI_SPAM_PATH . 'vendor/plugin-update-checker/plugin-update-checker.php';
+	\YahnisElsts\PluginUpdateChecker\v6\PucFactory::buildUpdateChecker(
+		'https://update.joeszalai.org/?action=get_metadata&slug=' . EXOPITE_ANTI_SPAM_PLUGIN_NAME,
+		EXOPITE_ANTI_SPAM_FILE,
+		EXOPITE_ANTI_SPAM_PLUGIN_NAME
+	);
+}
 
 
 /**

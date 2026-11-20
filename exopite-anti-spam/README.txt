@@ -1,11 +1,11 @@
-=== Plugin Name ===
+=== Exopite Anti Spam ===
 Contributors: JoeSz
 Donate link: https://www.joeszalai.org
 Tags: comments, spam
 Requires at least: 5.3
 Tested up to: 7.1
 Requires PHP: 7.0
-Stable tag: 4.7
+Stable tag: 20261007
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -43,10 +43,12 @@ The plugin adds a timestamp, a honeypot with random location, token matching, ba
 The plugin does not use sessions or cookies.
 * To prevent the reuse of tokens, the used tokens are stored with the submission time, the form ID and the user ID of logged in users (no IP address) for max. 31 days.
 * The limit of failed attempts stores only a hash of the IP address in a temporary entry (max. 30 minutes).
-* Logging is disabled by default. If it is enabled, the log files contain the IP address and the submitted data (names, e-mail addresses, phone numbers and street addresses are masked). Log files are deleted after 30 days.
+* The limit of failed attempts and the acceptance check use the IP address of the direct connection (REMOTE_ADDR). Behind a reverse proxy or CDN all visitors would share one address, the real IP (from a trusted header) can be passed with the filter <code>exopite_anti_spam_visitor_ip</code> (all IP checks and the logs) or <code>exopite_anti_spam_ratelimit_ip</code> (only the limit of failed attempts). For private and local addresses (e.g. 127.0.0.1, 192.168.x.x) the limit is disabled, unless the filter <code>exopite_anti_spam_ratelimit_allow_private_ip</code> returns true.
+* Logging is disabled by default. If it is enabled, the log files contain the shortened IP address (e.g. 192.168.1.0) and the submitted data (names, e-mail addresses, phone numbers and street addresses are masked). Log files are deleted after 30 days.
 
 ### Simple to use settings page for each contact form
 You can turn on/off features in each form.
+Default for forms without saved settings: honeypot and timestamp are on, all other features (bad/spam words, image captcha AJAX loading, acceptance check, limit of failed attempts) are off. The defaults can be changed with the filters <code>exopite_enable_honeypot</code>, <code>exopite_enable_timestamp</code>, <code>exopite_enable_badwords</code> and <code>exopite_enable_ratelimit</code>.
 
 ### Text and error messages are translatable
 Texts and error messages can be translated into any language, so -in this way- they can be personalized.
@@ -55,16 +57,23 @@ Texts and error messages can be translated into any language, so -in this way- t
 You can customize the amount of icons to display and the icons to select.
 
 ### Loads with Ajax so as not to be cached by caching plugins
-You can load the whole Contact Form 7 with AJAX or only the image captcha and the timestamp. <br>
-If you load the whole Contact Form 7 with AJAX the spam-bots can not find any form to work with.<br>
-To activate this function please use the <code>[contact-form-7-ajax id="YOUR-CF7-ID" title="YOUR-CF7-TITLE"]</code> shortcode.
-If you load the image captcha and the timestamp with AJAX your caching plugin will not cache those.<br>
+With "AJAX loading" (form settings) the image captcha and the timestamp are loaded with AJAX, your caching plugin will not cache those.<br>
 With this option enabled, visitors with JavaScript disabled, can not send any E-Mails with the form.
+
+With a page cache "AJAX loading" should be enabled: a cached page contains the same single use tokens (image captcha, timestamp) for every visitor, only the first submission would work.<br>
+* On installation (or the update to this version) "AJAX loading" is enabled for all forms if a page cache is active.<br>
+* The "Anti Spam" tab of the form shows the active page cache, new forms have "AJAX loading" enabled by default then.<br>
+* If a page cache is activated later, an admin notice recommends "AJAX loading", with a button to enable it for all forms (shown until it is used or dismissed). Nothing is changed automatically.<br>
+Detected: WP Rocket, WP Fastest Cache (if the cache is enabled), LiteSpeed Cache, W3 Total Cache, WP Super Cache, Cache Enabler, WP-Optimize, Breeze, Hummingbird and other page cache plugins which set WP_CACHE. Server caches (Varnish, Cloudflare, hosting cache) can not be detected, they can be added with the filter <code>exopite_anti_spam_page_cache_plugins</code> (array of names).
+The shortcode <code>[contact-form-7-ajax]</code> (loaded the whole form with AJAX after a click on a link) was removed, pages which still contain it show the form directly, like <code>[contact-form-7]</code>.
 
 ### Honeypot with random location
 Honeypot is a computer security mechanism. It is a decoy that looks and operates like a normal form field, to protect by attract and detect potential attackers. With honeypot the plugin can detect if they are being targeted by cyber threats.
 Basically, it's a extra form field to detect whether the form filled by a genuine person or a spam-bot. The field is an invisible fields on the form. Invisible is different than hidden! Bots understand hidden fields and they will ignore it. The label is set to instruct the end user to absolutely nothing with the field and just leave it empty. The technique rely on the assumption, that an automated bot/script will complete every field in the form. However, some will get through, but not many.
 The plugin also display the honeypot field in the form in a random location. Keep moving it around between the valid fields to prevent the spam-bot writer to detect the field easily.
+
+### Spam
+Bot submissions (honeypot filled, encrypted data of the timestamp, image captcha or acceptance token missing or manipulated) get the Contact Form 7 status "spam" with the reason in the spam log (e.g. Flamingo), like the spam filters of Contact Form 7 (Akismet, reCAPTCHA, Turnstile). Errors a visitor can fix (sent too fast, session expired, wrong icons) are shown as validation errors. If a plugin skips the spam check of Contact Form 7 (filter wpcf7_skip_spam_check), the spam checks of this plugin are skipped too.
 
 ### Timestamp
 The plugin also apply a timestamp as a hidden input on the form to ensure the minimum and maximum age of the "session". On submission, the plugin will compare the submitted timestamp with the timestamp when the form was displayed. If it is more than the maximum or less than the minimum time (can be set for each form, default: 2 seconds and 10 minutes), then it is very likely an automated bot/script, because a bot 'types' much faster than a human.
@@ -95,9 +104,8 @@ The plugin allows you to filter certain email addresses and domains.
 * Contact Form CFDB7
 * Contact Form Entries
 
-### Not with whole form AJAX loading
-* Contact Form 7 Conditional Fields
-* Contact Form 7 Datepicker
+### Notes
+* Contact Form 7 Conditional Fields: the image captcha <code>[easimagecaptcha]</code> must be placed outside of all <code>[group]</code> tags (the anti spam fields are always checked, also if the browser reports them as hidden)
 
 == Installation ==
 
@@ -110,6 +118,55 @@ The plugin allows you to filter certain email addresses and domains.
 2. Screenshot frontend
 
 == Changelog ==
+
+= 20261007 =
+* Fix: Contact Form 7 6.2+: the page "Blacklist" is in the Contact Form 7 menu again (the top-level menu is now "wpcf7-dashboard", older versions still use "wpcf7")
+* Fix: a second submit while the first one is still running (double click on the submit button, Enter) is ignored by the JS: the second request got "Token error (10)" and its error message replaced the "mail sent" message, so the visitor could send the message twice
+* New: filter exopite_anti_spam_visitor_ip for the real IP address behind a reverse proxy or CDN (trusted header), used by the acceptance token IP check, the limit of failed attempts and the logs; exopite_anti_spam_ratelimit_ip still changes only the limit of failed attempts
+* New: optional automatic updates with Plugin Update Checker 6.0 (vendor/plugin-update-checker), switched off by default: only active if wp-config.php sets define( 'EXOPITE_ANTI_SPAM_UPDATE_CHECKER', true ); (metadata URL https://update.joeszalai.org/). Plugin Update Checker 6.0 requires PHP 7.4, on older PHP versions it is not loaded
+* Remove: the empty folder "logs" in the plugin directory (left over from older versions, the logs are in wp-content/uploads/exopite-anti-spam/ since 20261001)
+
+= 20261006 =
+* Change: bot submissions get the Contact Form 7 status "spam" (filter wpcf7_spam, like Akismet, reCAPTCHA and Turnstile), the reasons are added to the spam log of the submission (e.g. shown in Flamingo): honeypot filled, timestamp, image captcha or acceptance token missing, not decryptable or manipulated, image captcha with an other number of icons, submission without the anti spam fields. Before these were validation errors (01, 02, 04-09, 11, 14, 15). Errors a visitor can fix stay validation errors: sent too fast, session expired, token already used, wrong icons, other IP address. Contact Form 7 checks spam only if the validation was successful; spam counts as failed attempt for the limit of failed attempts
+* Change: the timestamp and the acceptance token are hidden fields of Contact Form 7 (filter wpcf7_form_hidden_fields), not form tags added to the form template anymore; their errors are shown at the first field of the form (timestamp) or at the checked acceptance checkbox. The filters exopite_anti_spam_timestamp and exopite_anti_spam_easacceptance get null as form tag. [eastimestamp] and [easacceptance] in a form template are ignored. The honeypot stays a form tag at a random position (a text field hidden with CSS, bots ignore hidden fields)
+* Security: the encryption HMAC also covers the IV (a modified IV could change the first block of the decrypted token)
+* Security: with "Conditional Fields for Contact Form 7" the anti spam fields (image captcha, timestamp, acceptance, honeypot) are never skipped as hidden (the list of hidden fields is sent by the browser and could be manipulated, this disabled the checks). The image captcha must not be placed inside a [group], it makes no sense there
+* Security: the anti spam fields are only added to forms on the frontend, in AJAX requests and in the Contact Form 7 REST feedback/refill requests (not in other REST API responses, in the admin area, WP-CLI or cron). The route is matched case-insensitive like WordPress does (e.g. /Contact-Form-7/v1/... would have skipped the timestamp and honeypot checks), a submission in a request without the anti spam fields is rejected as spam
+* Security: an image captcha or acceptance token sent as timestamp caused a PHP fatal error (HTTP 500), the timestamp must be a number now
+* Security: with "Conditional Fields for Contact Form 7" a bot could remove the errors of the bad words and e-mail checks by sending the field names as hidden, these errors are restored too
+* Security: the image captcha must have the number of icons of the form (icon:, choose:), an easier default captcha from the AJAX reload is rejected as spam
+* Security: the encryption key is replaced once (older versions created it with mt_rand(), which is predictable); forms open during the update get one token error, the JS loads new tokens
+* Security: an image captcha or acceptance token which can not be stored as used (database error) is rejected
+* Security: log files (only if logging is enabled): max. 5 MB per file and day (filter exopite_anti_spam_log_max_size), values longer than 1000 characters are shortened, IP addresses are shortened (GDPR, e.g. 192.168.1.0), no DEBUG log of the form settings anymore
+* Change: the anti spam settings of a form can be saved by everyone who can edit the form in Contact Form 7 (default: editors and administrators), before only administrators (the changes of editors were discarded without a message). The global settings (blacklist) stay for administrators
+* New: page cache detection (WP Rocket, WP Fastest Cache, LiteSpeed Cache, W3 Total Cache, WP Super Cache, Cache Enabler, WP-Optimize, Breeze, Hummingbird, WP_CACHE): "AJAX loading" is enabled for all forms on installation/update if a page cache is active, the form settings show the active cache, an admin notice with a button recommends "AJAX loading" if a cache is activated later (on cached pages all visitors got the same single use tokens, only the first submission worked); filter exopite_anti_spam_page_cache_plugins for server caches
+* Removed: [contact-form-7-ajax] (loaded the whole form with AJAX after a click on a "Load Contact Form 7" link, visitors had to click before they saw the form, the AJAX endpoint rendered any form for anyone). "AJAX loading" in the form settings keeps cached pages working. Pages which still contain the shortcode show the form directly, like [contact-form-7]
+* Change: defaults for forms without saved settings: honeypot and timestamp are on (were off), the limit of failed attempts is off (was on); forms with saved settings are not changed
+* Fix: limit of failed attempts: only the IP address of the direct connection (REMOTE_ADDR) is used, no spoofable headers; disabled for private and local IP addresses (new filter exopite_anti_spam_ratelimit_allow_private_ip)
+* Fix: errors are attached to the first named field of the form (forms starting with a nameless tag, e.g. [submit] or [response], showed no error message)
+* Fix: acceptance token: also requested for a checkbox checked by default ("default:on") and after keyboard, touch or focus interaction (only real, trusted events of the visitor); no double requests; optional acceptance checkboxes left unchecked are not checked
+* Fix: new tokens are loaded after every unsuccessful submission (also "spam", "mail failed", "unaccepted" and "aborted"), a new timestamp also if it was missing or invalid (errors 08, 09)
+* Fix: the settings of a new contact form are saved on the first save (the form ID did not exist yet), and only if the "Anti Spam" panel was submitted
+* Fix: saving the global settings does not delete the encryption key anymore
+* Fix: e-mail blacklist: error messages with "&" or apostrophes were shown encoded (&amp;), blocked addresses with these characters were not found
+* Fix: token table: form and user IDs above 32767 (BIGINT), index for the clean up
+* Fix: limit of failed attempts: IPv6 addresses of the same /64 network are counted together
+* Fix: the page cache check runs only for administrators (not for every user in the admin area)
+* Fix: no fatal error if another plugin contains the class RemoteAddress, the logs use the IP address like the limit of failed attempts (REMOTE_ADDR)
+* Fix: honeypot position for forms without other fields
+* Fix: e-mail check uses the Contact Form 7 e-mail validation (if available)
+* Change: spam word list rewritten: only words and phrases which (almost) always come from spam (pharma, adult, gambling, SEO/backlink offers, crypto and money scams, fake products and diplomas, bot links like [url=]), also in German (e.g. "Potenzmittel", "ohne Rezept", "Kredit ohne Schufa"). Common business phrases which caused false positives are removed (e.g. "free quote", "best price", "terms and conditions", "luxury car", "loans", "mortgage", "medication", "for you"). Site-specific words can be added on the settings page. The filter is active only if it is enabled for the form.
+* Fix: German translation: "Please select %s" and "Please select the correct %s" added to the translation template, e-mail blacklist description no longer marked as fuzzy (was not shown in German)
+* Docs: README header (plugin name, stable tag), rate limit and proxy notes
+* Code: the public class is split into classes by task, the behaviour, filters and settings are unchanged:
+  - Exopite_Anti_Spam_Public_Validate_Fields (public/class-exopite-anti-spam-public-validate-fields.php): validation of all anti spam fields, Conditional Fields compatibility
+  - Exopite_Anti_Spam_Token (includes/class-exopite-anti-spam-token.php): single use tokens (database, locks)
+  - Exopite_Anti_Spam_Public_Rate_Limiter (public/class-exopite-anti-spam-public-rate-limiter.php): limit of failed attempts
+  - Exopite_Anti_Spam_Page_Cache (includes/class-exopite-anti-spam-page-cache.php): page cache detection, admin notice
+  - Exopite_Anti_Spam_Crypter: also the encryption key (get_key(), was Exopite_Anti_Spam_Public::get_token())
+  - Exopite_Anti_Spam_Logger: also the masking of personal data for the log (mask_data())
+  - Exopite_Anti_Spam_Public_Fields: also the AJAX request of the acceptance token; unused duplicate of get_cf7_meta() removed
+  - Exopite_Anti_Spam_Public: scripts and styles, form settings, saving the timestamp token after the mail was sent, logging and helpers
 
 = 20261002 =
 * New: Contact Form 7 is a required plugin ("Requires Plugins" header, WordPress 6.5+): Anti Spam can only be activated if CF7 is active, CF7 can not be deactivated while Anti Spam is active

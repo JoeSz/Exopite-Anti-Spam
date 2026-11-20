@@ -93,7 +93,7 @@ $log_dir = Exopite_Anti_Spam_Logger::get_dir( $this->main->public->is_logging() 
         <?php endif; ?>
         <p class="eas-field-instructions"><?php
             /* translators: %d: number of days */
-            printf( esc_html__( 'Log files older than %d days are deleted automatically. Names, e-mail addresses, phone numbers and street addresses are masked in the log.', 'exopite-anti-spam' ), intval( Exopite_Anti_Spam_Logger::get_retention_days() ) );
+            printf( esc_html__( 'Log files older than %d days are deleted automatically. IP addresses are shortened, names, e-mail addresses, phone numbers and street addresses are masked in the log.', 'exopite-anti-spam' ), intval( Exopite_Anti_Spam_Logger::get_retention_days() ) );
         ?></p>
     </div>
 

@@ -624,7 +624,7 @@ msgstr ""
 
 #: admin/partials/exopite-anti-spam-admin-display.php
 #, php-format
-msgid "Log files older than %d days are deleted automatically. Names, e-mail addresses, phone numbers and street addresses are masked in the log."
+msgid "Log files older than %d days are deleted automatically. IP addresses are shortened, names, e-mail addresses, phone numbers and street addresses are masked in the log."
 msgstr ""
 
 #: admin/class-exopite-anti-spam-admin.php
@@ -666,4 +666,41 @@ msgstr ""
 
 #: admin/class-exopite-anti-spam-admin.php
 msgid "Icons to select (less than the number of icons)"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public-fields.php
+#, php-format
+msgid "Please select %s"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public.php
+#, php-format
+msgid "Please select the correct %s"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php
+#, php-format
+msgid "Active page cache: %s."
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Please enable \"AJAX loading\": on cached pages all visitors get the same single use tokens, only the first submission would work."
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php
+#, php-format
+msgid "Exopite Anti Spam: \"AJAX loading\" was enabled for %d contact forms."
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php
+#, php-format
+msgid "A page cache was activated (%s). On cached pages all visitors get the same single use tokens of the image captcha and the timestamp, only the first submission would work. Please enable \"AJAX loading\" for the contact forms."
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Enable \"AJAX loading\" for all forms"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Dismiss"
 msgstr ""

@@ -72,7 +72,6 @@ msgid "Blacklist Unwanted Emails"
 msgstr "Blacklist Unerwünschter E-Mails"
 
 #: admin/partials/exopite-anti-spam-admin-display.php:40
-#, fuzzy
 msgid ""
 "The email addresses and domains entered here will be filtered out of all "
 "email fields from all Contact Form 7."
@@ -646,8 +645,8 @@ msgstr "Die Protokollierung ist deaktiviert. Um sie zu aktivieren, fügen Sie fo
 
 #: admin/partials/exopite-anti-spam-admin-display.php
 #, php-format
-msgid "Log files older than %d days are deleted automatically. Names, e-mail addresses, phone numbers and street addresses are masked in the log."
-msgstr "Protokolldateien, die älter als %d Tage sind, werden automatisch gelöscht. Namen, E-Mail-Adressen, Telefonnummern und Straßenadressen werden im Protokoll maskiert."
+msgid "Log files older than %d days are deleted automatically. IP addresses are shortened, names, e-mail addresses, phone numbers and street addresses are masked in the log."
+msgstr "Protokolldateien, die älter als %d Tage sind, werden automatisch gelöscht. IP-Adressen werden gekürzt, Namen, E-Mail-Adressen, Telefonnummern und Straßenadressen werden im Protokoll maskiert."
 
 #: admin/class-exopite-anti-spam-admin.php
 msgid "Limit failed attempts"
@@ -689,3 +688,30 @@ msgstr "Anzahl der Symbole (2–10)"
 #: admin/class-exopite-anti-spam-admin.php
 msgid "Icons to select (less than the number of icons)"
 msgstr "Auszuwählende Symbole (weniger als die Anzahl der Symbole)"
+
+#: admin/class-exopite-anti-spam-admin.php
+#, php-format
+msgid "Active page cache: %s."
+msgstr "Aktiver Seiten-Cache: %s."
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Please enable \"AJAX loading\": on cached pages all visitors get the same single use tokens, only the first submission would work."
+msgstr "Bitte aktivieren Sie „Laden über AJAX“: Auf zwischengespeicherten Seiten erhalten alle Besucher dieselben Einmal-Tokens, nur die erste Übermittlung würde funktionieren."
+
+#: admin/class-exopite-anti-spam-admin.php
+#, php-format
+msgid "Exopite Anti Spam: \"AJAX loading\" was enabled for %d contact forms."
+msgstr "Exopite Anti Spam: „Laden über AJAX“ wurde für %d Kontaktformulare aktiviert."
+
+#: admin/class-exopite-anti-spam-admin.php
+#, php-format
+msgid "A page cache was activated (%s). On cached pages all visitors get the same single use tokens of the image captcha and the timestamp, only the first submission would work. Please enable \"AJAX loading\" for the contact forms."
+msgstr "Ein Seiten-Cache wurde aktiviert (%s). Auf zwischengespeicherten Seiten erhalten alle Besucher dieselben Einmal-Tokens des Bild-Captchas und des Zeitstempels, nur die erste Übermittlung würde funktionieren. Bitte aktivieren Sie „Laden über AJAX“ für die Kontaktformulare."
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Enable \"AJAX loading\" for all forms"
+msgstr "„Laden über AJAX“ für alle Formulare aktivieren"
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Dismiss"
+msgstr "Ausblenden"

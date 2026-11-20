@@ -1,7 +1,7 @@
 <?php
 
 /**
- * The file that defines the icon plugin class
+ * Encryption of the tokens (AES-256-CBC with HMAC) and the encryption key.
  *
  * @link       https://www.joeszalai.org
  * @since      1.0.0
@@ -11,6 +11,70 @@
  */
 
 class Exopite_Anti_Spam_Crypter {
+
+    /**
+     * Option with the encryption key ('token').
+     */
+    public $option_name;
+
+    public function __construct( $option_name = 'exopite-anti-spam' ) {
+
+        $this->option_name = $option_name;
+
+    }
+
+    /**
+     * Encryption key, created on first use, saved in the plugin options ('token').
+     * Keys of versions before 20261006 were created with mt_rand() (predictable seed), they are replaced once ('key_version').
+     * Forms open at that moment get one token error, the JS loads new tokens.
+     */
+    public function get_key() {
+
+        $options = get_option( $this->option_name );
+
+        if( ! isset( $options['token'] ) || empty( $options['key_version'] ) ) {
+
+            if ( ! is_array( $options) ) $options = array();
+
+            $options['token'] = $this->generate_token( 40 );
+            $options['key_version'] = 2;
+            update_option( $this->option_name, $options );
+
+        }
+
+        return $options['token'];
+
+    }
+
+    /**
+     * Convert a hex value from the request to binary.
+     * Manipulated values (array, not hex, odd length) return false without PHP warnings,
+     * the caller rejects the submission and writes the reason to the plugin log (with IP).
+     */
+    public function request_hex2bin( $value ) {
+
+        if ( ! is_string( $value ) || '' === $value || 0 !== strlen( $value ) % 2 || ! preg_match( '/^[0-9a-f]+$/i', $value ) ) {
+            return false;
+        }
+
+        return hex2bin( $value );
+    }
+
+    /**
+     * Encrypt with the plugin key, hex encoded (for hidden fields and AJAX responses).
+     */
+    public function encrypt_hex( $pure_string ) {
+
+        return bin2hex( $this->encrypt( $pure_string, $this->get_key() ) );
+    }
+
+    /**
+     * Decrypt a hex value from the request with the plugin key, false if it is invalid or manipulated.
+     */
+    public function decrypt_hex( $value ) {
+
+        return $this->decrypt( $this->request_hex2bin( $value ), $this->get_key() );
+    }
 
     public function generate_token( $length ) {
 
@@ -40,8 +104,18 @@ class Exopite_Anti_Spam_Crypter {
         $ivlen = openssl_cipher_iv_length($cipher);
         $iv = openssl_random_pseudo_bytes($ivlen);
         $ciphertext_raw = openssl_encrypt($pure_string, $cipher, $encryption_key, $options, $iv);
-        $hmac = hash_hmac($hash_algo, $ciphertext_raw, $encryption_key, true);
+        $hmac = $this->mac( $iv, $ciphertext_raw, $encryption_key );
         return $iv.$hmac.$ciphertext_raw;
+    }
+
+    /**
+     * HMAC over IV and ciphertext: with CBC, a changed IV changes the first block of the plaintext,
+     * so the IV must be authenticated too (otherwise e.g. a single use token could be modified and replayed).
+     * Own key for the HMAC, derived from the encryption key.
+     */
+    private function mac( $iv, $ciphertext_raw, $encryption_key ) {
+        $mac_key = hash_hmac( 'sha256', 'exopite-anti-spam-mac', $encryption_key, true );
+        return hash_hmac( 'sha256', $iv . $ciphertext_raw, $mac_key, true );
     }
 
     public function decrypt ($encrypted_string, $encryption_key) {
@@ -59,7 +133,7 @@ class Exopite_Anti_Spam_Crypter {
         $iv = substr($encrypted_string, 0, $ivlen);
         $hmac = substr($encrypted_string, $ivlen, $sha2len);
         $ciphertext_raw = substr($encrypted_string, $ivlen+$sha2len);
-        $calcmac = hash_hmac($hash_algo, $ciphertext_raw, $encryption_key, true);
+        $calcmac = $this->mac( $iv, $ciphertext_raw, $encryption_key );
 
         // Check the HMAC first, decrypt only authentic data.
         $valid = function_exists('hash_equals') ? hash_equals($hmac, $calcmac) : $this->hash_equals_custom($hmac, $calcmac);
