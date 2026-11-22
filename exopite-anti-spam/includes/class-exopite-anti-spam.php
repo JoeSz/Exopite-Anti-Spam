@@ -203,6 +203,7 @@ class Exopite_Anti_Spam {
 
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-exopite-anti-spam-public-rate-limiter.php';
 
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-svg-path.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-icons.php';
 
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-crytper.php';

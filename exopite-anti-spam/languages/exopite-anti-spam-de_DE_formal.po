@@ -715,3 +715,15 @@ msgstr "„Laden über AJAX“ für alle Formulare aktivieren"
 #: admin/class-exopite-anti-spam-admin.php
 msgid "Dismiss"
 msgstr "Ausblenden"
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Failed attempts:"
+msgstr "Fehlversuche:"
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Within (minutes):"
+msgstr "Innerhalb (Minuten):"
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Block (minutes):"
+msgstr "Sperre (Minuten):"

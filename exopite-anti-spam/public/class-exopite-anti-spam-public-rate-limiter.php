@@ -42,15 +42,33 @@ class Exopite_Anti_Spam_Public_Rate_Limiter {
 
     }
 
+    /** Defaults: failed attempts, time window (minutes), block (minutes) */
+    const DEFAULT_MAX_FAILURES   = 5;
+    const DEFAULT_WINDOW_MINUTES = 10;
+    const DEFAULT_BLOCK_MINUTES  = 30;
+
     /**
-     * Rate limit settings, can be changed with filters.
+     * Rate limit settings of the form ("Anti Spam" tab: attempts, window and block in minutes),
+     * the defaults for forms saved before these fields existed. The filters get the value of the
+     * form (window and block in seconds) and can still change it.
+     *
+     * @param array|false|null $options  Form settings, null: settings of the current form.
+     * @return array max_failures, window (seconds), block (seconds)
      */
-    public function get_settings() {
+    public function get_settings( $options = null ) {
+
+        if ( null === $options ) {
+            $options = $this->main->public->get_cf7_meta();
+        }
+
+        $max    = isset( $options['ratelimit_max'] ) ? intval( $options['ratelimit_max'] ) : self::DEFAULT_MAX_FAILURES;
+        $window = isset( $options['ratelimit_window'] ) ? intval( $options['ratelimit_window'] ) : self::DEFAULT_WINDOW_MINUTES;
+        $block  = isset( $options['ratelimit_block'] ) ? intval( $options['ratelimit_block'] ) : self::DEFAULT_BLOCK_MINUTES;
 
         return array(
-            'max_failures' => max( 1, intval( apply_filters( 'exopite_anti_spam_ratelimit_max_failures', 5 ) ) ),
-            'window'       => max( MINUTE_IN_SECONDS, intval( apply_filters( 'exopite_anti_spam_ratelimit_window', 10 * MINUTE_IN_SECONDS ) ) ),
-            'block'        => max( MINUTE_IN_SECONDS, intval( apply_filters( 'exopite_anti_spam_ratelimit_block', 30 * MINUTE_IN_SECONDS ) ) ),
+            'max_failures' => max( 1, intval( apply_filters( 'exopite_anti_spam_ratelimit_max_failures', max( 1, $max ) ) ) ),
+            'window'       => max( MINUTE_IN_SECONDS, intval( apply_filters( 'exopite_anti_spam_ratelimit_window', max( 1, $window ) * MINUTE_IN_SECONDS ) ) ),
+            'block'        => max( MINUTE_IN_SECONDS, intval( apply_filters( 'exopite_anti_spam_ratelimit_block', max( 1, $block ) * MINUTE_IN_SECONDS ) ) ),
         );
 
     }

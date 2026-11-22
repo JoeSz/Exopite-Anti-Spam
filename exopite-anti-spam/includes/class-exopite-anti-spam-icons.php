@@ -22,15 +22,143 @@ class Exopite_Anti_Spam_Icons {
     }
 
     /**
-     * Make the SVG markup a little different on every render, invisible for humans.
-     * Bots can not identify the icons by comparing the markup with a stored list
-     * (the markup of an icon was always the same), they would need to render and compare images.
-     *
-     * - every number of the path is moved by max. +/- 0.25 unit (viewBox is ~1800 units, icon is ~50px)
-     *   and formatted with random precision,
-     * - the icon is wrapped in a group with a tiny random rotation, scale and offset.
+     * Completely different SVG markup on every render, the same shape for humans.
+     * Bots can not identify the icons by comparing the markup with a stored list.
+     * See rewrite_svg(); icons with arcs (custom icons via filter) get the simple randomizer.
      */
     public function randomize_svg( $svg ) {
+
+        $rewritten = $this->rewrite_svg( $svg );
+
+        return ( false !== $rewritten ) ? $rewritten : $this->randomize_svg_simple( $svg );
+    }
+
+    /**
+     * The icon in a new random coordinate system (square viewBox of random size and origin, so
+     * size and centre of the original do not show), slightly rotated, scaled and sheared on the
+     * points themselves, every path rewritten by Exopite_Anti_Spam_Svg_Path (same shape, other
+     * commands and numbers), plus a little visual noise (see noise()).
+     * Filter 'exopite_anti_spam_icon_noise' (default true): false = clean icons, still rewritten.
+     *
+     * @return string|false False when a path can not be read (arcs).
+     */
+    public function rewrite_svg( $svg ) {
+
+        if ( ! preg_match( '/viewbox="\s*([-\d.]+)[\s,]+([-\d.]+)[\s,]+([-\d.]+)[\s,]+([-\d.]+)\s*"/i', $svg, $vb ) ) {
+            return false;
+        }
+        if ( ! preg_match_all( '/<path\b[^>]*\sd="([^"]+)"[^>]*>/i', $svg, $paths ) ) {
+            return false;
+        }
+
+        $x0 = (float) $vb[1];
+        $y0 = (float) $vb[2];
+        $w  = (float) $vb[3];
+        $h  = (float) $vb[4];
+        if ( $w <= 0 || $h <= 0 ) {
+            return false;
+        }
+        $cx = $x0 + $w / 2;
+        $cy = $y0 + $h / 2;
+
+        $noise = (bool) apply_filters( 'exopite_anti_spam_icon_noise', true );
+        $size  = mt_rand( 200, 2000 );
+        $ox    = mt_rand( -5000, 5000 );
+        $oy    = mt_rand( -5000, 5000 );
+        $scale = $size / ( max( $w, $h ) * mt_rand( 102, 110 ) / 100 ) * mt_rand( 940, 980 ) / 1000;
+        $angle = deg2rad( mt_rand( -200, 200 ) / 100 );
+        $a     = $scale * cos( $angle );
+        $b     = $scale * sin( $angle );
+        // Slight shear with the noise (a distortion a human does not notice).
+        $shear = $noise ? mt_rand( -40, 40 ) / 1000 : 0.0;
+        $ncx   = $ox + $size / 2 + $size * mt_rand( -50, 50 ) / 10000;
+        $ncy   = $oy + $size / 2 + $size * mt_rand( -50, 50 ) / 10000;
+        // Rotation and scale, then x += shear * y.
+        $ma = $a + $shear * $b;
+        $mc = -$b + $shear * $a;
+        $m  = array( $ma, $b, $mc, $a, $ncx - ( $ma * $cx + $mc * $cy ), $ncy - ( $b * $cx + $a * $cy ) );
+
+        $out = '';
+        foreach ( $paths[1] as $i => $d ) {
+
+            $subs = Exopite_Anti_Spam_Svg_Path::parse( html_entity_decode( $d, ENT_QUOTES ) );
+            if ( false === $subs ) {
+                return false;
+            }
+
+            $subs = Exopite_Anti_Spam_Svg_Path::transform( $subs, $m );
+
+            // Noise in the first path, mixed between the subpaths of the icon.
+            if ( $noise && 0 === $i ) {
+                $subs = array_merge( $subs, $this->noise( $ox, $oy, $size ) );
+            }
+
+            $out .= '<path d="' . Exopite_Anti_Spam_Svg_Path::write( Exopite_Anti_Spam_Svg_Path::shuffle( $subs ), 0.25 * $scale ) . '"/>';
+        }
+
+        return '<svg viewBox="' . $ox . ' ' . $oy . ' ' . $size . ' ' . $size . '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' . $out . '</svg>';
+    }
+
+    /**
+     * Visual noise as subpaths of the icon path (same fill, so it can not be told apart by element
+     * or colour): 3-6 small dots and 1-2 thin short strokes anywhere in the square. A human still
+     * sees the icon at once; a pixel comparison with the icon set gets harder.
+     */
+    public function noise( $ox, $oy, $size ) {
+
+        $subs = array();
+
+        for ( $i = mt_rand( 3, 6 ); $i > 0; $i-- ) {
+            $r  = $size * $this->rand_float( 0.010, 0.022 );
+            $x  = $ox + $size * $this->rand_float( 0.05, 0.95 );
+            $y  = $oy + $size * $this->rand_float( 0.05, 0.95 );
+            $cw = mt_rand( 0, 1 ) ? 1 : -1;
+            // Circle from 4 quadratic curves (control points on the square around it).
+            $subs[] = array(
+                'start'  => array( $x + $r, $y ),
+                'closed' => true,
+                'segs'   => array(
+                    array( 'Q', array( $x + $r, $y + $cw * $r ), array( $x, $y + $cw * $r ) ),
+                    array( 'Q', array( $x - $r, $y + $cw * $r ), array( $x - $r, $y ) ),
+                    array( 'Q', array( $x - $r, $y - $cw * $r ), array( $x, $y - $cw * $r ) ),
+                    array( 'Q', array( $x + $r, $y - $cw * $r ), array( $x + $r, $y ) ),
+                ),
+            );
+        }
+
+        for ( $i = mt_rand( 1, 2 ); $i > 0; $i-- ) {
+            $len = $size * $this->rand_float( 0.12, 0.30 );
+            $wid = $size * $this->rand_float( 0.008, 0.014 );
+            $ang = $this->rand_float( 0, M_PI );
+            $x   = $ox + $size * $this->rand_float( 0.1, 0.9 );
+            $y   = $oy + $size * $this->rand_float( 0.1, 0.9 );
+            $dx  = cos( $ang ) * $len / 2;
+            $dy  = sin( $ang ) * $len / 2;
+            $nx  = -sin( $ang ) * $wid / 2;
+            $ny  = cos( $ang ) * $wid / 2;
+            $subs[] = array(
+                'start'  => array( $x - $dx + $nx, $y - $dy + $ny ),
+                'closed' => true,
+                'segs'   => array(
+                    array( 'L', array( $x + $dx + $nx, $y + $dy + $ny ) ),
+                    array( 'L', array( $x + $dx - $nx, $y + $dy - $ny ) ),
+                    array( 'L', array( $x - $dx - $nx, $y - $dy - $ny ) ),
+                ),
+            );
+        }
+
+        return $subs;
+    }
+
+    private function rand_float( $min, $max ) {
+        return $min + ( $max - $min ) * mt_rand( 0, 10000 ) / 10000;
+    }
+
+    /**
+     * Fallback for paths that can not be rewritten: every number moved by max. +/- 0.25 unit,
+     * the icon wrapped in a group with a tiny random rotation, scale and offset.
+     */
+    public function randomize_svg_simple( $svg ) {
 
         $randomized = preg_replace_callback( '/(\sd=")([^"]+)(")/', function( $matches ) {
             return $matches[1] . $this->randomize_path( $matches[2] ) . $matches[3];

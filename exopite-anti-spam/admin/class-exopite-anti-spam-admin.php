@@ -307,7 +307,19 @@ class Exopite_Anti_Spam_Admin {
 
         // Rate limit
         $checked = $this->main->ratelimiter->is_active( isset( $options[0] ) ? $options[0] : false );
-        $ratelimit = $this->main->ratelimiter->get_settings();
+        $ratelimit = $this->main->ratelimiter->get_settings( isset( $options[0] ) ? $options[0] : false );
+
+        $extra  = '<div class="eas-row eas-ratelimit-values" style="display:none;">';
+        $extra .= '<div class="eas-col-4">';
+        $extra .= '<label for="eas-ratelimit-max">' . esc_html__( 'Failed attempts:', 'exopite-anti-spam' ) . '</label> <input id="eas-ratelimit-max" type="number" name="eas-ratelimit-max" value="' . esc_attr( $ratelimit['max_failures'] ) . '" min="1" max="50">';
+        $extra .= '</div>';
+        $extra .= '<div class="eas-col-4">';
+        $extra .= '<label for="eas-ratelimit-window">' . esc_html__( 'Within (minutes):', 'exopite-anti-spam' ) . '</label> <input id="eas-ratelimit-window" type="number" name="eas-ratelimit-window" value="' . esc_attr( $ratelimit['window'] / MINUTE_IN_SECONDS ) . '" min="1" max="1440">';
+        $extra .= '</div>';
+        $extra .= '<div class="eas-col-4">';
+        $extra .= '<label for="eas-ratelimit-block">' . esc_html__( 'Block (minutes):', 'exopite-anti-spam' ) . '</label> <input id="eas-ratelimit-block" type="number" name="eas-ratelimit-block" value="' . esc_attr( $ratelimit['block'] / MINUTE_IN_SECONDS ) . '" min="1" max="1440">';
+        $extra .= '</div>';
+        $extra .= '</div>';
 
         $this->panel_switch_row(
             'eas-activate-ratelimit',
@@ -320,7 +332,8 @@ class Exopite_Anti_Spam_Admin {
                 $ratelimit['block'] / MINUTE_IN_SECONDS
             ) ),
             __( 'Activate limit of failed attempts', 'exopite-anti-spam' ),
-            $checked
+            $checked,
+            $extra
         );
 
     }
@@ -406,7 +419,15 @@ class Exopite_Anti_Spam_Admin {
 
         $ratelimit = isset( $_POST['eas-activate-ratelimit'] ) ? 'yes' : 'no';
 
+        // Limit of failed attempts: out of range values fall back to the defaults.
+        $ratelimit_max    = isset( $_POST['eas-ratelimit-max'] ) ? intval( $_POST['eas-ratelimit-max'] ) : 0;
+        $ratelimit_window = isset( $_POST['eas-ratelimit-window'] ) ? intval( $_POST['eas-ratelimit-window'] ) : 0;
+        $ratelimit_block  = isset( $_POST['eas-ratelimit-block'] ) ? intval( $_POST['eas-ratelimit-block'] ) : 0;
+
         $anti_spam_options = array(
+            'ratelimit_max'         => ( $ratelimit_max > 0 && $ratelimit_max < 51 ) ? $ratelimit_max : Exopite_Anti_Spam_Public_Rate_Limiter::DEFAULT_MAX_FAILURES,
+            'ratelimit_window'      => ( $ratelimit_window > 0 && $ratelimit_window < 1441 ) ? $ratelimit_window : Exopite_Anti_Spam_Public_Rate_Limiter::DEFAULT_WINDOW_MINUTES,
+            'ratelimit_block'       => ( $ratelimit_block > 0 && $ratelimit_block < 1441 ) ? $ratelimit_block : Exopite_Anti_Spam_Public_Rate_Limiter::DEFAULT_BLOCK_MINUTES,
             'timestamp'             => $timestamp,
             'timestamp_min'         => $timestamp_min,
             'timestamp_max'         => $timestamp_max,

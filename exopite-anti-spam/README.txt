@@ -5,7 +5,7 @@ Tags: comments, spam
 Requires at least: 5.3
 Tested up to: 7.1
 Requires PHP: 7.0
-Stable tag: 20261007
+Stable tag: 20261122
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -118,6 +118,12 @@ The plugin allows you to filter certain email addresses and domains.
 2. Screenshot frontend
 
 == Changelog ==
+
+= 20261122 =
+* Security: the image captcha icons are rewritten on every render (class Exopite_Anti_Spam_Svg_Path): the same shape, but completely different SVG markup. Subpaths in random order, closed subpaths start at a random corner, segments split in two, lines written as curves, absolute / relative commands and the precision mixed; the icon lands in a new square viewBox of random size and origin, slightly rotated and scaled on the points themselves. Before only the numbers moved a little, so a short script could recognise every icon by its command letters (the icon set is public, Font Awesome 4.7). Icons with arcs (custom icons via filter) keep the simple randomizer
+* Security: a little visual noise in the icons (3-6 small dots, 1-2 thin strokes as part of the icon path, slight shear): humans see the icon at once, comparing the rendered image with the icon set gets harder. Filter exopite_anti_spam_icon_noise (default true) switches it off; exopite_anti_spam_randomize_icons still switches off the whole randomizer
+* New: the limit of failed attempts can be set per form in the "Anti Spam" tab: failed attempts (1-50), time window and block time in minutes (1-1440). Forms saved before keep the defaults 5 attempts / 10 minutes / 30 minutes; the filters exopite_anti_spam_ratelimit_max_failures, _window and _block get the value of the form and can still change it
+* Tested: Contact Form 7 6.2.5 and 6.1.7, PHP 8.3; syntax checked on PHP 7.3 and 8.4
 
 = 20261007 =
 * Fix: Contact Form 7 6.2+: the page "Blacklist" is in the Contact Form 7 menu again (the top-level menu is now "wpcf7-dashboard", older versions still use "wpcf7")

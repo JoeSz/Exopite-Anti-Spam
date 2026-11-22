@@ -704,3 +704,15 @@ msgstr ""
 #: admin/class-exopite-anti-spam-admin.php
 msgid "Dismiss"
 msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Failed attempts:"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Within (minutes):"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php
+msgid "Block (minutes):"
+msgstr ""

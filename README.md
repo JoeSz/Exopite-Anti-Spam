@@ -29,7 +29,7 @@ No external service, no cookies, no data sent to third parties.
 ### GDPR compliant
 The plugin does not use sessions or cookies and does not send any data to third parties.
 * To prevent the reuse of tokens, the used tokens are stored with the submission time, the form ID and the user ID of logged in users (no IP address) for max. 31 days.
-* The limit of failed attempts stores only a hash of the IP address in a temporary entry (max. 30 minutes).
+* The limit of failed attempts stores only a hash of the IP address in a temporary entry (as long as the time window or the block time of the form, default max. 30 minutes).
 * Logging is disabled by default. If it is enabled, the log files contain the IP address and the submitted data (names, e-mail addresses, phone numbers and street addresses are masked). Log files are deleted after 30 days.
 
 ### Simple to use settings page for each contact form
@@ -65,7 +65,7 @@ If the time has expired, a new timestamp is loaded automatically and the visitor
 The plugin generates an anonymous "token" on each form request, this is essentially a unique secret code. This token is encrypted and applied as a hidden input on the form. After the submission of the form, first the token is checked against the database and then stored for a month. This ensures that every form is used only one time, also if a spammer downloads the form and submits it multiple times (also with parallel requests).
 
 ### Limit failed attempts
-After 5 failed attempts (e.g. wrong image captcha, honeypot, token error) within 10 minutes, the IP address of the visitor is blocked for 30 minutes. This prevents bots from guessing the image captcha. Typical human errors (expired time, forgotten selection, invalid e-mail address) are not counted. Can be deactivated for each form, deactivate it if the website is behind a proxy or CDN, which does not pass the IP address of the visitors.
+After 5 failed attempts (e.g. wrong image captcha, honeypot, token error) within 10 minutes, the IP address of the visitor is blocked for 30 minutes. The three values can be set per form in the "Anti Spam" tab (attempts 1-50, time window and block 1-1440 minutes). This prevents bots from guessing the image captcha. Typical human errors (expired time, forgotten selection, invalid e-mail address) are not counted. Can be deactivated for each form, deactivate it if the website is behind a proxy or CDN, which does not pass the IP address of the visitors.
 
 ### Bad/spam word filtering
 Spam messages are different from messages written by humans. Most of the time significantly different. Especially using words like "vicodin" or "viagra". Those words are useful indicators for spam. The plugin searches these words in text and textarea fields. If any is found, then it is very likely written by an automated bot/script.
@@ -107,15 +107,16 @@ The log files are stored in `wp-content/uploads/exopite-anti-spam/logs-<random>/
 | `exopite_anti_spam_selected_amount` | tag option `choose` | Number of icons to select (`$amount, $tag, $contact_form`) |
 | `exopite_anti_spam_exanspsel_icons` | built-in icons | Icons of the image captcha (`$icons, $amount`) |
 | `exopite_anti_spam_exanspsel_icons_html` | | HTML of the image captcha (`$html, $icons`) |
-| `exopite_anti_spam_randomize_icons` | `true` | Slightly different SVG markup on every render |
+| `exopite_anti_spam_randomize_icons` | `true` | Completely different SVG markup (same shape) on every render |
+| `exopite_anti_spam_icon_noise` | `true` | Small dots, thin strokes and a slight shear in the icons (false = clean icons, still rewritten) |
 | `exopite_anti_spam_captcha_max_age` | `DAY_IN_SECONDS` | Max. age of an image captcha in seconds |
 | `exopite_anti_spam_acceptance_max_age` | `DAY_IN_SECONDS` | Max. age of an acceptance token in seconds |
 | `exopite_anti_spam_bad_words` | built-in list | Bad/spam words, regex fragments (`$words, $tag, $contact_form`) |
 | `exopite_anti_spam_blacklisted_domains` | settings | Blocked domains (`$domains, $tag, $result, $contact_form`) |
 | `exopite_anti_spam_blacklisted_emails` | settings | Blocked e-mail addresses (`$emails, $tag, $result, $contact_form`) |
-| `exopite_anti_spam_ratelimit_max_failures` | `5` | Failed attempts before the visitor is blocked |
-| `exopite_anti_spam_ratelimit_window` | `600` | Time window for the failed attempts in seconds |
-| `exopite_anti_spam_ratelimit_block` | `1800` | Block time in seconds |
+| `exopite_anti_spam_ratelimit_max_failures` | form setting (`5`) | Failed attempts before the visitor is blocked |
+| `exopite_anti_spam_ratelimit_window` | form setting (`600`) | Time window for the failed attempts in seconds |
+| `exopite_anti_spam_ratelimit_block` | form setting (`1800`) | Block time in seconds |
 | `exopite_anti_spam_ratelimit_ip` | `REMOTE_ADDR` | IP address of the visitor (e.g. behind a trusted proxy) |
 | `exopite_anti_spam_logging` | `false` | Enable logging |
 | `exopite_anti_spam_log_retention_days` | `30` | Log files older than this are deleted |
