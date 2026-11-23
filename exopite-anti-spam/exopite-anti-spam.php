@@ -98,8 +98,25 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-exopite-anti-spam.php';
  */
 function run_exopite_anti_spam() {
 
-	$plugin = new Exopite_Anti_Spam();
+	$plugin = exopite_anti_spam();
 	$plugin->run();
 
 }
+
+/**
+ * The running plugin instance (e.g. for tests or other plugins), created on first call.
+ *
+ * @return Exopite_Anti_Spam
+ */
+function exopite_anti_spam() {
+
+	static $instance = null;
+
+	if ( null === $instance ) {
+		$instance = new Exopite_Anti_Spam();
+	}
+
+	return $instance;
+}
+
 run_exopite_anti_spam();
