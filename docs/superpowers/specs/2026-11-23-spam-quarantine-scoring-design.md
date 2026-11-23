@@ -45,6 +45,9 @@ generikus felismerési rétegek (pontrendszer, e-mail-ellenőrzés, proof-of-wor
 
 - WordPress 5.3+, PHP 7.0 a header szerint (a kód 8.2-8.5 alatt hibátlan, régi szintaxis nélkül), Contact Form 7 6.1+.
 - Apache és nginx: minden tárolás adatbázisban, nincs új fájl a web root alatt.
+- DSGVO-konform marad (a felhasználó döntése): nincs süti, nincs `localStorage`/`sessionStorage`/IndexedDB, nincs
+  külső szolgáltatás vagy külső kérés a böngészőből; a böngészőoldali állapot csak JS-változókban és rejtett
+  űrlapmezőkben él.
 - Személyes adat (karantén) csak bekapcsolt karanténnál, korlátozott ideig, adminnak látható.
 - A meglévő funkciók, filterek és beállítások változatlanul működnek tovább.
 - Felhasználói szövegek: angol msgid, német fordítás (de_DE, de_DE_formal), a plugin eddigi gyakorlata szerint.
