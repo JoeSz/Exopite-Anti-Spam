@@ -124,6 +124,13 @@ class Exopite_Anti_Spam {
      */
     public $admin;
 
+    /**
+     * Admin page "Anti Spam" (quarantine, statistics).
+     *
+     * @var Exopite_Anti_Spam_Admin_Overview
+     */
+    public $overview;
+
 	public $honeypot_name = 'eashpc_website_url';
 
     /**
@@ -206,6 +213,7 @@ class Exopite_Anti_Spam {
 		 * The class responsible for defining all actions that occur in the admin area.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-exopite-anti-spam-admin.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-exopite-anti-spam-admin-overview.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing
@@ -291,6 +299,10 @@ class Exopite_Anti_Spam {
 
         // Add menu item
         $this->loader->add_action( 'admin_menu', $this->admin, 'add_plugin_admin_menu' );
+
+        // Page "Anti Spam": quarantine and statistics
+        $this->overview = new Exopite_Anti_Spam_Admin_Overview( $this->get_plugin_name(), $this->main );
+        $this->loader->add_action( 'admin_menu', $this->overview, 'add_menu' );
 
         $this->loader->add_filter( 'wpcf7_admin_init', $this->admin, 'wpcf7_admin_init', 55 );
         $this->loader->add_action( 'wpcf7_editor_panels', $this->admin, 'wpcf7_editor_panels', 10, 1 );
