@@ -5,7 +5,7 @@ Tags: comments, spam
 Requires at least: 5.3
 Tested up to: 7.1
 Requires PHP: 7.0
-Stable tag: 20261122
+Stable tag: 20261123
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -43,6 +43,7 @@ The plugin adds a timestamp, a honeypot with random location, token matching, ba
 The plugin does not use sessions or cookies.
 * To prevent the reuse of tokens, the used tokens are stored with the submission time, the form ID and the user ID of logged in users (no IP address) for max. 31 days.
 * The limit of failed attempts stores only a hash of the IP address in a temporary entry (max. 30 minutes).
+* The limit of token requests (new timestamp, image captcha or acceptance token via AJAX: 60 requests per 10 minutes, then 2 minutes pause) stores only a hash of the IP address in a temporary entry (max. 12 minutes), not for logged in users.
 * The limit of failed attempts and the acceptance check use the IP address of the direct connection (REMOTE_ADDR). Behind a reverse proxy or CDN all visitors would share one address, the real IP (from a trusted header) can be passed with the filter <code>exopite_anti_spam_visitor_ip</code> (all IP checks and the logs) or <code>exopite_anti_spam_ratelimit_ip</code> (only the limit of failed attempts). For private and local addresses (e.g. 127.0.0.1, 192.168.x.x) the limit is disabled, unless the filter <code>exopite_anti_spam_ratelimit_allow_private_ip</code> returns true.
 * Logging is disabled by default. If it is enabled, the log files contain the shortened IP address (e.g. 192.168.1.0) and the submitted data (names, e-mail addresses, phone numbers and street addresses are masked). Log files are deleted after 30 days.
 
@@ -118,6 +119,10 @@ The plugin allows you to filter certain email addresses and domains.
 2. Screenshot frontend
 
 == Changelog ==
+
+= 20261123 =
+* Security: limit of the token requests per visitor, like the challenge limit of Exopite Captcha: the AJAX requests for a new timestamp, image captcha or acceptance token (eap_reload_cf7_fields, eap_get_acceptance_token) are limited to 60 per 10 minutes per IP address (IPv6: per /64 network), then 2 minutes pause with HTTP 429 and Retry-After. A bot which asks for a new captcha or token for every guess is slowed down. Always active, independent of the "Limit failed attempts" form setting; not for logged in users and private IP addresses. The limit can be changed on the "Blacklist" settings page (requests, time window and pause in minutes; 0 requests = no limit, e.g. for many visitors behind one IP address), the filter exopite_anti_spam_token_request_limit (array max, window, pause in seconds) gets the saved values. Only a hash of the IP address is stored in a transient
+* Tested: PHP 8.5.1 (syntax and runtime check of the classes, no deprecation notices), Contact Form 7 6.1.7
 
 = 20261122 =
 * Security: the image captcha icons are rewritten on every render (class Exopite_Anti_Spam_Svg_Path): the same shape, but completely different SVG markup. Subpaths in random order, closed subpaths start at a random corner, segments split in two, lines written as curves, absolute / relative commands and the precision mixed; the icon lands in a new square viewBox of random size and origin, slightly rotated and scaled on the points themselves. Before only the numbers moved a little, so a short script could recognise every icon by its command letters (the icon set is public, Font Awesome 4.7). Icons with arcs (custom icons via filter) keep the simple randomizer

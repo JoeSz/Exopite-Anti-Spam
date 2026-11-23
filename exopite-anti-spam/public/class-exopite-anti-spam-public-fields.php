@@ -374,12 +374,38 @@ class Exopite_Anti_Spam_Public_Fields {
     }
 
     /**
+     * Token request limit (see Exopite_Anti_Spam_Public_Rate_Limiter::token_request_wait()): HTTP 429 with
+     * Retry-After and an empty body. The JS ends the loading state in its error handler and asks again
+     * on the next interaction or submission.
+     *
+     * @return bool  true if the request was rejected (the response headers are sent, the caller ends the request).
+     */
+    private function reject_if_token_limit_reached() {
+
+        $wait = $this->main->ratelimiter->token_request_wait();
+
+        if ( ! $wait ) {
+            return false;
+        }
+
+        nocache_headers();
+        status_header( 429 );
+        header( 'Retry-After: ' . intval( $wait ) );
+
+        return true;
+    }
+
+    /**
      * AJAX function
      */
 
      public function reload_cf7_fields_ajax() {
 
         $ret = array();
+
+        if ( $this->reject_if_token_limit_reached() ) {
+            die();
+        }
 
         // CF7 removed without the plugins page (e.g. via FTP): WordPress does not deactivate this plugin then.
         if ( ! class_exists( 'WPCF7_ContactForm' ) ) {
@@ -404,6 +430,10 @@ class Exopite_Anti_Spam_Public_Fields {
      * AJAX: acceptance token, requested when an acceptance checkbox is checked.
      */
     public function get_acceptance_token() {
+
+        if ( $this->reject_if_token_limit_reached() ) {
+            die();
+        }
 
         $token_random = bin2hex( random_bytes( 32 ) );
         $submit_ip = $this->main->public->get_visitor_ip();

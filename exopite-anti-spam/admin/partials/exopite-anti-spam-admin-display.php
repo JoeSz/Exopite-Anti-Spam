@@ -22,6 +22,10 @@ $error_message_domain = isset( $options['display_error_message_domain'] ) ? $opt
 $block_domain_list = isset( $options['list_of_block_domains'] ) ? $options['list_of_block_domains'] : '';
 $block_emails_list = isset( $options['list_of_block_emails'] ) ? $options['list_of_block_emails'] : '';
 $custom_spam_words = isset( $options['custom_spam_words'] ) ? $options['custom_spam_words'] : '';
+// Limit of token requests: saved values or the defaults (requests, minutes, minutes).
+$token_request_max = isset( $options['token_request_max'] ) ? intval( $options['token_request_max'] ) : Exopite_Anti_Spam_Public_Rate_Limiter::DEFAULT_TOKEN_REQUESTS;
+$token_request_window = isset( $options['token_request_window'] ) ? intval( $options['token_request_window'] ) : Exopite_Anti_Spam_Public_Rate_Limiter::DEFAULT_TOKEN_WINDOW_SECONDS / MINUTE_IN_SECONDS;
+$token_request_pause = isset( $options['token_request_pause'] ) ? intval( $options['token_request_pause'] ) : Exopite_Anti_Spam_Public_Rate_Limiter::DEFAULT_TOKEN_PAUSE_SECONDS / MINUTE_IN_SECONDS;
 // Logging enabled: create the directory now, so the real path is shown (not only after the first log entry).
 $log_dir = Exopite_Anti_Spam_Logger::get_dir( $this->main->public->is_logging() );
 
@@ -75,6 +79,17 @@ $log_dir = Exopite_Anti_Spam_Logger::get_dir( $this->main->public->is_logging() 
         <label class="eas-row-title" for="eas-custom-spam-words"><?php esc_html_e( 'Own spam words', 'exopite-anti-spam' ); ?></label><br>
         <textarea id="eas-custom-spam-words" class="eas-form-field" name="<?php echo esc_attr( $this->plugin_name ); ?>[custom_spam_words]" cols="100" rows="8"><?php echo esc_textarea( $custom_spam_words ); ?></textarea>
         <p class="eas-field-instructions"><?php esc_html_e( 'One word or phrase per line, plain text, not case-sensitive. These words are checked in addition to the built-in list in text and textarea fields, if the bad/spam words filtering is activated in the form ("Anti Spam" tab). They are stored in the database, so plugin updates do not overwrite them.', 'exopite-anti-spam' ); ?></p>
+    </div>
+
+    <div class="row">
+        <span class="eas-row-title"><?php esc_html_e( 'Limit of token requests', 'exopite-anti-spam' ); ?></span><br>
+        <label for="eas-token-request-max"><?php esc_html_e( 'Requests per visitor:', 'exopite-anti-spam' ); ?></label>
+        <input id="eas-token-request-max" type="number" name="<?php echo esc_attr( $this->plugin_name ); ?>[token_request_max]" value="<?php echo esc_attr( $token_request_max ); ?>" min="0" max="10000" step="1">
+        <label for="eas-token-request-window"><?php esc_html_e( 'within (minutes):', 'exopite-anti-spam' ); ?></label>
+        <input id="eas-token-request-window" type="number" name="<?php echo esc_attr( $this->plugin_name ); ?>[token_request_window]" value="<?php echo esc_attr( $token_request_window ); ?>" min="1" max="1440" step="1">
+        <label for="eas-token-request-pause"><?php esc_html_e( 'then pause (minutes):', 'exopite-anti-spam' ); ?></label>
+        <input id="eas-token-request-pause" type="number" name="<?php echo esc_attr( $this->plugin_name ); ?>[token_request_pause]" value="<?php echo esc_attr( $token_request_pause ); ?>" min="1" max="1440" step="1">
+        <p class="eas-field-instructions"><?php esc_html_e( 'The browser asks for a new timestamp, image captcha or acceptance token via AJAX (on every page view with "AJAX loading", after every unsuccessful submission and when an acceptance checkbox is checked). After this many requests from one IP address within the time window the visitor has to wait for the pause (HTTP 429), so a bot can not ask for a new captcha for every guess. Default: 60 requests in 10 minutes, 2 minutes pause. Many visitors behind one IP address (e.g. a large office or a school with "AJAX loading") may need a higher value; 0 = no limit. Logged in users and private IP addresses are not limited.', 'exopite-anti-spam' ); ?></p>
     </div>
 
     <?php submit_button( __( 'Save changes', 'exopite-anti-spam' ), 'primary','submit', TRUE ); ?>

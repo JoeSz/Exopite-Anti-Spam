@@ -519,6 +519,22 @@ class Exopite_Anti_Spam_Admin {
             $options[ $field ] = isset( $input[ $field ] ) && is_string( $input[ $field ] ) ? sanitize_text_field( $input[ $field ] ) : '';
         }
 
+        /**
+         * Limit of token requests (see Exopite_Anti_Spam_Public_Rate_Limiter::token_request_wait()):
+         * requests (0 = no limit), time window and pause in minutes. Empty fields keep the defaults.
+         */
+        $number_fields = array(
+            'token_request_max'    => array( 0, 10000, Exopite_Anti_Spam_Public_Rate_Limiter::DEFAULT_TOKEN_REQUESTS ),
+            'token_request_window' => array( 1, 1440, Exopite_Anti_Spam_Public_Rate_Limiter::DEFAULT_TOKEN_WINDOW_SECONDS / MINUTE_IN_SECONDS ),
+            'token_request_pause'  => array( 1, 1440, Exopite_Anti_Spam_Public_Rate_Limiter::DEFAULT_TOKEN_PAUSE_SECONDS / MINUTE_IN_SECONDS ),
+        );
+
+        foreach ( $number_fields as $field => $range ) {
+            list( $min, $max, $default ) = $range;
+            $value = isset( $input[ $field ] ) && is_scalar( $input[ $field ] ) && '' !== trim( (string) $input[ $field ] ) ? intval( $input[ $field ] ) : $default;
+            $options[ $field ] = min( $max, max( $min, $value ) );
+        }
+
         return $options;
 
     }
