@@ -716,3 +716,23 @@ msgstr ""
 #: admin/class-exopite-anti-spam-admin.php
 msgid "Block (minutes):"
 msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php
+msgid "Limit of token requests"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php
+msgid "Requests per visitor:"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php
+msgid "within (minutes):"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php
+msgid "then pause (minutes):"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php
+msgid "The browser asks for a new timestamp, image captcha or acceptance token via AJAX (on every page view with \"AJAX loading\", after every unsuccessful submission and when an acceptance checkbox is checked). After this many requests from one IP address within the time window the visitor has to wait for the pause (HTTP 429), so a bot can not ask for a new captcha for every guess. Default: 60 requests in 10 minutes, 2 minutes pause. Many visitors behind one IP address (e.g. a large office or a school with \"AJAX loading\") may need a higher value; 0 = no limit. Logged in users and private IP addresses are not limited."
+msgstr ""

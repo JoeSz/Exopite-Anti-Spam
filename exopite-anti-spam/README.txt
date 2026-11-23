@@ -122,6 +122,7 @@ The plugin allows you to filter certain email addresses and domains.
 
 = 20261123 =
 * Security: limit of the token requests per visitor, like the challenge limit of Exopite Captcha: the AJAX requests for a new timestamp, image captcha or acceptance token (eap_reload_cf7_fields, eap_get_acceptance_token) are limited to 60 per 10 minutes per IP address (IPv6: per /64 network), then 2 minutes pause with HTTP 429 and Retry-After. A bot which asks for a new captcha or token for every guess is slowed down. Always active, independent of the "Limit failed attempts" form setting; not for logged in users and private IP addresses. The limit can be changed on the "Blacklist" settings page (requests, time window and pause in minutes; 0 requests = no limit, e.g. for many visitors behind one IP address), the filter exopite_anti_spam_token_request_limit (array max, window, pause in seconds) gets the saved values. Only a hash of the IP address is stored in a transient
+* Translation: German texts of the new settings (de_DE, de_DE_formal), .pot updated; the .mo files are compiled in the standard layout (the old files could not be read by the older gettext reader of WordPress, the loader of WordPress 6.5+ was not affected)
 * Tested: PHP 8.5.1 (syntax and runtime check of the classes, no deprecation notices), Contact Form 7 6.1.7
 
 = 20261122 =
