@@ -382,6 +382,25 @@ class Exopite_Anti_Spam_Admin {
             $extra
         );
 
+        // E-mail check
+        $email_settings = $this->main->email_check->get_settings( $form_options );
+
+        $this->panel_switch_row(
+            'eas-email-disposable',
+            __( 'Disposable e-mail addresses', 'exopite-anti-spam' ),
+            esc_html__( 'Rejects e-mail addresses of disposable (one-way) e-mail services, e.g. mailinator.com, from a built-in list. The visitor sees an error message at the e-mail field and can enter another address. The message can be changed on the "Blacklist" page.', 'exopite-anti-spam' ),
+            __( 'Reject disposable e-mail addresses', 'exopite-anti-spam' ),
+            $email_settings['disposable']
+        );
+
+        $this->panel_switch_row(
+            'eas-email-mx',
+            __( 'E-mail domains that do not exist', 'exopite-anti-spam' ),
+            esc_html__( 'Asks the DNS of the server, if the domain of the e-mail address can receive e-mails (MX record, or an A/AAAA record). Rejects typos like "gmial.cmo". If the DNS does not answer, the address is accepted. The domain name is sent to the DNS resolver of the server, the result is cached for a day.', 'exopite-anti-spam' ),
+            __( 'Reject e-mail domains that do not exist', 'exopite-anti-spam' ),
+            $email_settings['mx']
+        );
+
     }
 
     public function wpcf7_editor_panels( $panels ) {
@@ -483,6 +502,8 @@ class Exopite_Anti_Spam_Admin {
             'acceptance_ajaxcheck'  => $acceptance_ajaxcheck,
             'ratelimit'             => $ratelimit,
             'quarantine'            => isset( $_POST['eas-activate-quarantine'] ) ? 'yes' : 'no',
+            'email_disposable'      => isset( $_POST['eas-email-disposable'] ) ? 'yes' : 'no',
+            'email_mx'              => isset( $_POST['eas-email-mx'] ) ? 'yes' : 'no',
             'scoring'               => isset( $_POST['eas-activate-scoring'] ) ? 'yes' : 'no',
             'scoring_threshold'     => $this->main->scoring->get_threshold( array( 'scoring_threshold' => isset( $_POST['eas-scoring-threshold'] ) ? intval( $_POST['eas-scoring-threshold'] ) : 0 ) ),
             'scoring_scripts'       => $this->main->scoring->get_extra_scripts( array( 'scoring_scripts' => isset( $_POST['eas-scoring-scripts'] ) ? array_map( 'sanitize_key', (array) wp_unslash( $_POST['eas-scoring-scripts'] ) ) : array() ) ),
@@ -559,7 +580,7 @@ class Exopite_Anti_Spam_Admin {
         }
 
         $textarea_fields = array( 'list_of_block_domains', 'list_of_block_emails', 'custom_spam_words' );
-        $text_fields = array( 'display_error_message_email', 'display_error_message_domain' );
+        $text_fields = array( 'display_error_message_email', 'display_error_message_domain', 'display_error_message_disposable', 'display_error_message_mx' );
 
         foreach ( $textarea_fields as $field ) {
             $options[ $field ] = isset( $input[ $field ] ) && is_string( $input[ $field ] ) ? sanitize_textarea_field( $input[ $field ] ) : '';

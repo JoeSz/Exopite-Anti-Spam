@@ -78,6 +78,18 @@ $log_dir = Exopite_Anti_Spam_Logger::get_dir( $this->main->public->is_logging() 
     </div>
 
     <div class="row">
+        <label class="eas-row-title" for="eas-display-error-message-disposable"><?php esc_html_e( 'Error message for disposable e-mail addresses', 'exopite-anti-spam' ); ?></label><br>
+        <input id="eas-display-error-message-disposable" type="text" class="eas-form-field" name="<?php echo esc_attr( $this->plugin_name ); ?>[display_error_message_disposable]" value="<?php echo esc_attr( isset( $options['display_error_message_disposable'] ) ? $options['display_error_message_disposable'] : '' ); ?>" placeholder="<?php esc_attr_e( 'Please use a permanent e-mail address.', 'exopite-anti-spam' ); ?>">
+        <p class="eas-field-instructions"><?php esc_html_e( 'Shown if "Reject disposable e-mail addresses" is activated in the form ("Anti Spam" tab).', 'exopite-anti-spam' ); ?></p>
+    </div>
+
+    <div class="row">
+        <label class="eas-row-title" for="eas-display-error-message-mx"><?php esc_html_e( 'Error message for e-mail domains that do not exist', 'exopite-anti-spam' ); ?></label><br>
+        <input id="eas-display-error-message-mx" type="text" class="eas-form-field" name="<?php echo esc_attr( $this->plugin_name ); ?>[display_error_message_mx]" value="<?php echo esc_attr( isset( $options['display_error_message_mx'] ) ? $options['display_error_message_mx'] : '' ); ?>" placeholder="<?php esc_attr_e( 'The domain of this e-mail address does not exist.', 'exopite-anti-spam' ); ?>">
+        <p class="eas-field-instructions"><?php esc_html_e( 'Shown if "Reject e-mail domains that do not exist" is activated in the form ("Anti Spam" tab).', 'exopite-anti-spam' ); ?></p>
+    </div>
+
+    <div class="row">
         <label class="eas-row-title" for="eas-custom-spam-words"><?php esc_html_e( 'Own spam words', 'exopite-anti-spam' ); ?></label><br>
         <textarea id="eas-custom-spam-words" class="eas-form-field" name="<?php echo esc_attr( $this->plugin_name ); ?>[custom_spam_words]" cols="100" rows="8"><?php echo esc_textarea( $custom_spam_words ); ?></textarea>
         <p class="eas-field-instructions"><?php esc_html_e( 'One word or phrase per line, plain text, not case-sensitive. These words are checked in addition to the built-in list in text and textarea fields, if the bad/spam words filtering is activated in the form ("Anti Spam" tab). They are stored in the database, so plugin updates do not overwrite them.', 'exopite-anti-spam' ); ?></p>
