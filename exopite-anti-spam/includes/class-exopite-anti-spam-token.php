@@ -199,6 +199,7 @@ class Exopite_Anti_Spam_Token {
         switch ( $type ) {
             case 'acceptance':
             case 'captcha':
+            case 'pow':
                 // Used tokens must be kept at least as long as they are valid, otherwise they could be replayed.
                 $elapsed = $this->get_max_age( $type ) + HOUR_IN_SECONDS;
                 break;

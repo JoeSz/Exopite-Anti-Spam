@@ -111,6 +111,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
         $result = $this->validate_timestamp( $result, $tags );
         $result = $this->validate_acceptance_token( $result, $tags );
+        $result = $this->main->pow->validate( $result, $tags );
 
         return $result;
 

@@ -27,8 +27,9 @@ class Exopite_Anti_Spam_Activator {
 	 * 2: type 'captcha' (single use image captcha tokens), index on token.
 	 * 3: BIGINT user and form IDs (SMALLINT was max. 32767), index for the clean up.
 	 * 4: tables for the statistics and the quarantine.
+	 * 5: type 'pow' (single use proof-of-work challenges).
 	 */
-	const DB_VERSION = '4';
+	const DB_VERSION = '5';
 
 	/**
 	 * Short Description. (use period)
@@ -51,7 +52,7 @@ class Exopite_Anti_Spam_Activator {
             submit_user_id BIGINT UNSIGNED,
             cf7_id BIGINT UNSIGNED,
             token VARCHAR(64),
-            type enum('acceptance','sent','captcha') DEFAULT NULL,
+            type enum('acceptance','sent','captcha','pow') DEFAULT NULL,
             PRIMARY KEY  (id),
             KEY token (token),
             KEY type_timestamp (type,timestamp)

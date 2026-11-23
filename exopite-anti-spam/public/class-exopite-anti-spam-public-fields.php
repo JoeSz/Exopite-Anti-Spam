@@ -150,6 +150,12 @@ class Exopite_Anti_Spam_Public_Fields {
             $fields['easacceptance'] = '';
         }
 
+        // Proof-of-work: challenge and solution, filled by the JS.
+        if ( $this->main->pow->is_active( $this->main->public->get_cf7_meta() ) ) {
+            $fields['easpowc'] = '';
+            $fields['easpows'] = '';
+        }
+
         return $fields;
     }
 
@@ -162,13 +168,23 @@ class Exopite_Anti_Spam_Public_Fields {
             return $html;
         }
 
-        if ( ! $this->main->public->is_user_logged_in() && $this->is_acceptance_ajaxcheck_active() ) {
+        $pow = ! $this->main->public->is_user_logged_in() && $this->main->pow->is_active( $this->main->public->get_cf7_meta() );
+
+        if ( ! $this->main->public->is_user_logged_in() && ( $this->is_acceptance_ajaxcheck_active() || $pow ) ) {
             $html .= '<noscript style="color:red;text-align:center;display:block;font-weight:bold;line-height:1.2;padding:15px 0;">This contact form will not function without javascript enabled. Please enable javascript on your browser.</noscript>';
         }
 
         $ajaxload = $this->is_ajaxload_active( $this->main->public->get_cf7_meta() );
 
-        $html .= '<div class="eas-ajax-url" data-ajax-load="' . ( $ajaxload ? '1' : '' ) . '" data-ajax-url="' . esc_url( admin_url( 'admin-ajax.php' ) ) . '"></div>';
+        // Proof-of-work: the JS requests a challenge for this form and solves it in a Web Worker.
+        $pow_attributes = '';
+
+        if ( $pow ) {
+            $worker_url = add_query_arg( 'ver', $this->version, EXOPITE_ANTI_SPAM_URL . 'public/js/exopite-anti-spam-pow-worker.js' );
+            $pow_attributes = ' data-pow="1" data-pow-worker="' . esc_url( $worker_url ) . '" data-form-id="' . esc_attr( WPCF7_ContactForm::get_current()->id() ) . '"';
+        }
+
+        $html .= '<div class="eas-ajax-url" data-ajax-load="' . ( $ajaxload ? '1' : '' ) . '" data-ajax-url="' . esc_url( admin_url( 'admin-ajax.php' ) ) . '"' . $pow_attributes . '></div>';
 
         return $html;
     }
@@ -419,6 +435,14 @@ class Exopite_Anti_Spam_Public_Fields {
 
         if ( isset( $_POST['exanspselAuth'] ) && ! empty( $_POST['exanspselAuth'] ) ) {
             $ret['exanspsel'] = $this->get_image_captcha_html_ajax( true );
+        }
+
+        // Proof-of-work challenge for the form ID (only if it is activated for that form).
+        if ( isset( $_POST['pow'] ) && is_scalar( $_POST['pow'] ) && absint( $_POST['pow'] ) ) {
+            $challenge = $this->main->pow->create_challenge( absint( $_POST['pow'] ) );
+            if ( $challenge ) {
+                $ret['pow'] = $challenge;
+            }
         }
 
         echo json_encode( $ret );

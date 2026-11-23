@@ -138,6 +138,13 @@ class Exopite_Anti_Spam {
     public $email_check;
 
     /**
+     * Invisible proof-of-work.
+     *
+     * @var Exopite_Anti_Spam_Public_Pow
+     */
+    public $pow;
+
+    /**
      * Store plugin admin class to allow public access.
      *
      * @since    20180622
@@ -196,6 +203,7 @@ class Exopite_Anti_Spam {
         $this->quarantine = new Exopite_Anti_Spam_Quarantine( $this->main );
         $this->scoring = new Exopite_Anti_Spam_Public_Scoring( $this->main );
         $this->email_check = new Exopite_Anti_Spam_Public_Email_Check( $this->main );
+        $this->pow = new Exopite_Anti_Spam_Public_Pow( $this->main );
 
         $this->set_locale();
         $this->define_admin_hooks();
@@ -265,6 +273,7 @@ class Exopite_Anti_Spam {
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-scorer.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-exopite-anti-spam-public-scoring.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-exopite-anti-spam-public-email-check.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-exopite-anti-spam-public-pow.php';
 
         // Global class name without prefix: other plugins may contain the same class.
         if ( ! class_exists( 'RemoteAddress' ) ) {

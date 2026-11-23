@@ -401,6 +401,33 @@ class Exopite_Anti_Spam_Admin {
             $email_settings['mx']
         );
 
+        // Proof-of-work
+        $checked = $this->main->pow->is_active( $form_options );
+        $difficulty = $this->main->pow->get_difficulty( $form_options );
+        $difficulties = array(
+            'low'    => __( 'Low', 'exopite-anti-spam' ),
+            'medium' => __( 'Medium (recommended)', 'exopite-anti-spam' ),
+            'high'   => __( 'High', 'exopite-anti-spam' ),
+        );
+
+        $extra  = '<div class="eas-row eas-pow-values" style="display:none;">';
+        $extra .= '<label for="eas-pow-difficulty">' . esc_html__( 'Difficulty:', 'exopite-anti-spam' ) . '</label> <select id="eas-pow-difficulty" name="eas-pow-difficulty">';
+
+        foreach ( $difficulties as $key => $label ) {
+            $extra .= '<option value="' . esc_attr( $key ) . '"' . selected( $difficulty, $key, false ) . '>' . esc_html( $label ) . '</option>';
+        }
+
+        $extra .= '</select></div>';
+
+        $this->panel_switch_row(
+            'eas-activate-pow',
+            __( 'Invisible proof-of-work', 'exopite-anti-spam' ),
+            esc_html__( 'While the visitor fills out the form, the browser solves a small calculation task in the background (about one second on a phone with "Medium"), the server checks it on submission. Humans do not notice it, but every submission costs a bot computing time, and bots without a real browser can not send the form at all. No cookies, no external service. Visitors with JavaScript disabled can not send the form.', 'exopite-anti-spam' ),
+            __( 'Activate proof-of-work', 'exopite-anti-spam' ),
+            $checked,
+            $extra
+        );
+
     }
 
     public function wpcf7_editor_panels( $panels ) {
@@ -504,6 +531,8 @@ class Exopite_Anti_Spam_Admin {
             'quarantine'            => isset( $_POST['eas-activate-quarantine'] ) ? 'yes' : 'no',
             'email_disposable'      => isset( $_POST['eas-email-disposable'] ) ? 'yes' : 'no',
             'email_mx'              => isset( $_POST['eas-email-mx'] ) ? 'yes' : 'no',
+            'pow'                   => isset( $_POST['eas-activate-pow'] ) ? 'yes' : 'no',
+            'pow_difficulty'        => $this->main->pow->get_difficulty( array( 'pow_difficulty' => isset( $_POST['eas-pow-difficulty'] ) ? sanitize_key( wp_unslash( $_POST['eas-pow-difficulty'] ) ) : '' ) ),
             'scoring'               => isset( $_POST['eas-activate-scoring'] ) ? 'yes' : 'no',
             'scoring_threshold'     => $this->main->scoring->get_threshold( array( 'scoring_threshold' => isset( $_POST['eas-scoring-threshold'] ) ? intval( $_POST['eas-scoring-threshold'] ) : 0 ) ),
             'scoring_scripts'       => $this->main->scoring->get_extra_scripts( array( 'scoring_scripts' => isset( $_POST['eas-scoring-scripts'] ) ? array_map( 'sanitize_key', (array) wp_unslash( $_POST['eas-scoring-scripts'] ) ) : array() ) ),

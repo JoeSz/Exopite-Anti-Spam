@@ -48,6 +48,21 @@
             $('.eas-scoring-values').show();
         }
 
+        // Difficulty of the proof-of-work, only while it is active
+        $('#eas-activate-pow').on('click', function(){
+
+            if ($(this).is(':checked')) {
+                $('.eas-pow-values').slideDown();
+            } else {
+                $('.eas-pow-values').slideUp();
+            }
+
+        });
+
+        if ($('#eas-activate-pow').is(':checked')) {
+            $('.eas-pow-values').show();
+        }
+
         // Quarantine actions (release, delete, delete all): ask first
         $(document).on('submit', 'form[data-eas-confirm]', function (e) {
             var question = $(this).data('eas-confirm');
