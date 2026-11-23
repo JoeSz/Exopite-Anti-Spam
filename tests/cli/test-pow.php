@@ -56,9 +56,9 @@ eas_set_meta( $form_id, array( 'pow_difficulty' => 'low' ) );
 // Expired: own challenge created 120 seconds ago, max age 60 seconds.
 $salt    = bin2hex( random_bytes( 16 ) );
 $expired = array(
-	'c' => $main->crypter->encrypt_hex( wp_json_encode( array( 'pow', $salt, 13, $form_id, time() - 120 ) ) ),
+	'c' => $main->crypter->encrypt_hex( wp_json_encode( array( 'pow', $salt, 16, $form_id, time() - 120 ) ) ),
 	's' => $salt,
-	'b' => 13,
+	'b' => 16,
 );
 add_filter(
 	'exopite_anti_spam_pow_max_age',

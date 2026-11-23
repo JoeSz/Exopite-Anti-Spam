@@ -22,12 +22,12 @@
 class Exopite_Anti_Spam_Public_Pow {
 
 	/**
-	 * Leading zero bits per difficulty (measured: "medium" about 1 second on a phone).
+	 * Leading zero bits per difficulty (measured: the worker does about 1.6 million hashes per second on a desktop, a phone about 4-6 times less: "medium" = 262144 hashes on average, about 0.15 seconds on a desktop and 1 second on a phone).
 	 */
 	const DIFFICULTIES = array(
-		'low'    => 13,
-		'medium' => 15,
-		'high'   => 17,
+		'low'    => 16,
+		'medium' => 18,
+		'high'   => 20,
 	);
 
 	/**

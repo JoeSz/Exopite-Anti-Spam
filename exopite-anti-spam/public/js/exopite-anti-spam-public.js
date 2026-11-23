@@ -32,6 +32,20 @@
             plugin.$acceptance = this.$element.find('.wpcf7-acceptance input[type="checkbox"]');
             plugin.$acceptanceToken = this.$element.find('input[name="easacceptance"]');
 
+            // Proof-of-work: challenge and solution (hidden fields), worker URL and form ID from the PHP.
+            var $settings = plugin.$element.find('.eas-ajax-url');
+            plugin.$powChallenge = this.$element.find('input[name="easpowc"]');
+            plugin.$powSolution = this.$element.find('input[name="easpows"]');
+            plugin.pow = {
+                active: !!$settings.data('pow') && plugin.$powChallenge.length > 0 && typeof window.Worker !== 'undefined',
+                workerUrl: $settings.data('pow-worker'),
+                formId: $settings.data('form-id'),
+                ready: false,
+                loading: false,
+                waiting: false,
+                worker: null
+            };
+
             plugin.bindEvents();
             plugin.ajaxLoad();
         },
@@ -57,6 +71,16 @@
                     if (e.target !== plugin.element) {
                         return;
                     }
+                    // Proof-of-work not solved yet: hold the submit, it is sent automatically when the solution is ready.
+                    if (plugin.pow.active && !plugin.pow.ready) {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        plugin.pow.waiting = true;
+                        plugin.$element.find('[type="submit"]').addClass('eas-pow-waiting');
+                        plugin.movedOrPressed = true;
+                        plugin.requestPow();
+                        return;
+                    }
                     var now = new Date().getTime();
                     if (plugin.element.getAttribute('data-status') === 'submitting' && plugin.submittedAt && (now - plugin.submittedAt) < 30000) {
                         e.preventDefault();
@@ -70,6 +94,7 @@
             plugin.$element.parents('.wpcf7').on('wpcf7mailsent', function (e) {
                 plugin.getElements(true, true);
                 plugin.refreshAcceptanceToken();
+                plugin.resetPow();
             });
 
             /**
@@ -82,6 +107,8 @@
                 var refreshTimestamp = !!(detail && detail.apiResponse && detail.apiResponse.eas_refresh_timestamp);
                 plugin.getElements(refreshTimestamp, true);
                 plugin.refreshAcceptanceToken();
+                // Every challenge is single use: a new one for the next submission.
+                plugin.resetPow();
             });
 
             /**
@@ -92,6 +119,8 @@
                 if (!plugin.movedOrPressed && e.originalEvent && e.originalEvent.isTrusted) {
                     plugin.movedOrPressed = true;
                     plugin.maybeGetAcceptanceToken();
+                    // Proof-of-work: solved while the visitor fills out the form (not on page load: battery, CPU).
+                    plugin.requestPow();
                 }
             });
 
@@ -129,10 +158,104 @@
                     // Allow a new request (e.g. the next click on the acceptance checkbox)
                     plugin.loadingAcceptance = false;
                     plugin.$element.find('.loading').removeClass('loading');
+                    // Proof-of-work: the next submit asks again (e.g. after HTTP 429).
+                    plugin.pow.loading = false;
+                    plugin.pow.waiting = false;
+                    plugin.$element.find('.eas-pow-waiting').removeClass('eas-pow-waiting');
                     console.log( 'Status: ' + xhr.status );
                     console.log( 'Error: ' + xhr.responseText );
                 },
             });
+        },
+        requestPow: function () {
+            var plugin = this;
+            if (!plugin.pow.active || plugin.pow.ready || plugin.pow.loading) {
+                return;
+            }
+            plugin.pow.loading = true;
+
+            plugin.doAjax({
+                'action': 'eap_reload_cf7_fields',
+                'pow': plugin.pow.formId,
+            }, plugin.processPow);
+        },
+        processPow: function (response, status, plugin) {
+            var data = {};
+            try {
+                data = JSON.parse(response);
+            } catch (error) {}
+
+            if (!data.pow || !data.pow.c) {
+                plugin.pow.loading = false;
+                plugin.pow.waiting = false;
+                plugin.$element.find('.eas-pow-waiting').removeClass('eas-pow-waiting');
+                return;
+            }
+
+            plugin.$powChallenge.val(data.pow.c);
+
+            if (plugin.pow.worker) {
+                plugin.pow.worker.terminate();
+            }
+
+            var worker = new window.Worker(plugin.pow.workerUrl);
+            plugin.pow.worker = worker;
+
+            worker.onmessage = function (event) {
+                worker.terminate();
+                plugin.pow.worker = null;
+                plugin.pow.loading = false;
+
+                if (!event.data || !event.data.nonce) {
+                    plugin.pow.waiting = false;
+                    plugin.$element.find('.eas-pow-waiting').removeClass('eas-pow-waiting');
+                    return;
+                }
+
+                plugin.$powSolution.val(event.data.nonce);
+                plugin.pow.ready = true;
+
+                if (plugin.pow.waiting) {
+                    plugin.pow.waiting = false;
+                    plugin.$element.find('.eas-pow-waiting').removeClass('eas-pow-waiting');
+                    plugin.submitForm();
+                }
+            };
+
+            worker.onerror = function () {
+                plugin.pow.worker = null;
+                plugin.pow.loading = false;
+                plugin.pow.waiting = false;
+                plugin.$element.find('.eas-pow-waiting').removeClass('eas-pow-waiting');
+            };
+
+            worker.postMessage({ salt: data.pow.s, bits: data.pow.b });
+        },
+        resetPow: function () {
+            var plugin = this;
+            if (!plugin.pow.active) {
+                return;
+            }
+            if (plugin.pow.worker) {
+                plugin.pow.worker.terminate();
+                plugin.pow.worker = null;
+            }
+            plugin.pow.ready = false;
+            plugin.pow.loading = false;
+            plugin.$powChallenge.val('');
+            plugin.$powSolution.val('');
+            if (plugin.movedOrPressed) {
+                plugin.requestPow();
+            }
+        },
+        submitForm: function () {
+            var plugin = this;
+            // Fires the submit event (Contact Form 7 sends via AJAX), unlike form.submit().
+            if (typeof plugin.element.requestSubmit === 'function') {
+                plugin.element.requestSubmit();
+            } else {
+                plugin.$element.find('[type="submit"]').first().trigger('click');
+            }
         },
         refreshAcceptanceToken: function () {
             var plugin = this;

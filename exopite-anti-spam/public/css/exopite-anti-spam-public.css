@@ -99,3 +99,9 @@
     background: #eee;
 }
 */
+
+/* Proof-of-work: submit button while the calculation is running (the form is sent automatically) */
+.wpcf7-form .eas-pow-waiting {
+    cursor: progress;
+    opacity: 0.6;
+}
