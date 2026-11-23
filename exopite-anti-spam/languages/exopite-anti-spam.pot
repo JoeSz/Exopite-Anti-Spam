@@ -736,3 +736,450 @@ msgstr ""
 #: admin/partials/exopite-anti-spam-admin-display.php
 msgid "The browser asks for a new timestamp, image captcha or acceptance token via AJAX (on every page view with \"AJAX loading\", after every unsuccessful submission and when an acceptance checkbox is checked). After this many requests from one IP address within the time window the visitor has to wait for the pause (HTTP 429), so a bot can not ask for a new captcha for every guess. Default: 60 requests in 10 minutes, 2 minutes pause. Many visitors behind one IP address (e.g. a large office or a school with \"AJAX loading\") may need a higher value; 0 = no limit. Logged in users and private IP addresses are not limited."
 msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php:110
+msgid "Quarantine"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:102
+msgid "Statistics"
+msgstr ""
+
+#: includes/class-exopite-anti-spam-quarantine.php:411
+msgid "The entry does not exist anymore."
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:202
+msgid "Sorry, you are not allowed to do this."
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:210
+msgid "Invalid request."
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:226
+msgid "The entry was deleted."
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:232
+#, php-format
+msgid "%d entry was deleted."
+msgid_plural "%d entries were deleted."
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:277
+#, php-format
+msgid "Released (%s)"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-statistics.php:55
+msgid "Sent"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:282
+msgid "Mail failed"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:283
+msgid "Aborted"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:284
+msgid "Honeypot filled"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:285
+msgid "Timestamp missing or manipulated"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:286
+msgid "Image captcha manipulated"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:287
+msgid "Acceptance token missing or manipulated"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:288
+msgid "Sent without the anti spam fields"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:289
+msgid "Spam score reached"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:290
+msgid "Proof-of-work missing or invalid"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:291
+msgid "Spam (other plugin)"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:292
+msgid "Sent too fast"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:293
+msgid "Session expired"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:294
+msgid "Token error (already used or invalid)"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:295
+msgid "Wrong image captcha"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:296
+msgid "Bad/spam words"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:297
+msgid "E-mail or domain blacklisted"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:298
+msgid "Too many failed attempts"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:299
+msgid "Disposable e-mail address"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:300
+msgid "E-mail domain does not exist"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:301
+msgid "Other validation error"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-statistics.php:58
+msgid "Released from quarantine"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin-overview.php:321
+#, php-format
+msgid "#%d (deleted)"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:345
+msgid "Submissions marked as spam because of the spam score, the honeypot or the proof-of-work are stored in the quarantine (sure bot signals like manipulated tokens are not). On the page \"Anti Spam\" (Contact menu) an administrator can view them, delete them or release them: a released submission is sent as if nothing had happened (mail and all other functions of the form). The visitor still gets the spam message. The quarantine stores personal data (all fields and the IP address) for the retention time set on the \"Blacklist\" page, please mention it in the privacy policy."
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:346
+msgid "Activate quarantine"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:356
+msgid "Cyrillic"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:357
+msgid "Chinese"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:358
+msgid "Japanese"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:359
+msgid "Korean"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:360
+msgid "Arabic"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:361
+msgid "Hebrew"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:362
+msgid "Greek"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:363
+msgid "Thai"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:367
+msgid "Spam from (points):"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:368
+msgid "Allowed scripts in addition to Latin and the script of the form language:"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:129
+msgid "Spam score"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:379
+msgid "Checks the content of the text fields after all other checks passed. Every rule gives points, the submission is spam if the sum reaches the limit (default 10), a single weak signal is never enough: Latin word with Cyrillic look-alike letters (e.g. \"vіagra\") 10, BBCode or HTML link 5, link or e-mail address in a name field 5, most letters in a script other than Latin and the language of the form 5, message with a link and almost no text 4, the same text in two fields 3, name which looks like random letters 2 per field, every link after the second 2. The visitor gets the spam message, the submission goes to the quarantine if it is activated."
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:380
+msgid "Activate spam score"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:390
+msgid "Disposable e-mail addresses"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:391
+msgid "Rejects e-mail addresses of disposable (one-way) e-mail services, e.g. mailinator.com, from a built-in list. The visitor sees an error message at the e-mail field and can enter another address. The message can be changed on the \"Blacklist\" page."
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:392
+msgid "Reject disposable e-mail addresses"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:398
+msgid "E-mail domains that do not exist"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:399
+msgid "Asks the DNS of the server, if the domain of the e-mail address can receive e-mails (MX record, or an A/AAAA record). Rejects typos like \"gmial.cmo\". If the DNS does not answer, the address is accepted. The domain name is sent to the DNS resolver of the server, the result is cached for a day."
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:400
+msgid "Reject e-mail domains that do not exist"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:408
+msgid "Low"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:409
+msgid "Medium (recommended)"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:410
+msgid "High"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:414
+msgid "Difficulty:"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:424
+msgid "Invisible proof-of-work"
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:425
+msgid "While the visitor fills out the form, the browser solves a small calculation task in the background (about one second on a phone with \"Medium\"), the server checks it on submission. Humans do not notice it, but every submission costs a bot computing time, and bots without a real browser can not send the form at all. No cookies, no external service. Visitors with JavaScript disabled can not send the form."
+msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:426
+msgid "Activate proof-of-work"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php:81
+msgid "Error message for disposable e-mail addresses"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public-email-check.php:92
+msgid "Please use a permanent e-mail address."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php:83
+msgid "Shown if \"Reject disposable e-mail addresses\" is activated in the form (\"Anti Spam\" tab)."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php:87
+msgid "Error message for e-mail domains that do not exist"
+msgstr ""
+
+#: public/class-exopite-anti-spam-public-email-check.php:103
+msgid "The domain of this e-mail address does not exist."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php:89
+msgid "Shown if \"Reject e-mail domains that do not exist\" is activated in the form (\"Anti Spam\" tab)."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php:111
+msgid "Keep entries (days):"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php:113
+msgid "Maximum number of entries:"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php:115
+msgid "The quarantine is activated per form (\"Anti Spam\" tab of the form). Entries older than this are deleted automatically, above the maximum the oldest entries are deleted. Default: 30 days, 1000 entries. The quarantine stores personal data (all fields and the IP address), please mention it in the privacy policy."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:21
+msgid "Back to the list"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:26
+#, php-format
+msgid "Entry #%1$d from %2$s"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-statistics.php:62
+msgid "Form"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:128
+msgid "Reasons"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:40
+msgid "Details"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:130
+msgid "Release error"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:48
+msgid "Submitted data"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:57
+msgid "Page"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:58
+msgid "Referer"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:59
+msgid "IP address"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:60
+msgid "Browser (user agent)"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:78
+msgid "The form has a file field: attachments are not stored in the quarantine and are not sent on release."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:81
+msgid "Release"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:81
+msgid "Release this submission? It is sent as if nothing had happened."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:86
+msgid "Delete"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:86
+msgid "Delete this entry?"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:97
+msgid "Submissions marked as spam because of the spam score, the honeypot or the proof-of-work, of forms with the quarantine activated (\"Anti Spam\" tab of the form). A released submission is sent as if nothing had happened."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:102
+msgid "The quarantine is not activated in any form. It can be activated in the \"Anti Spam\" tab of a form."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:104
+msgid "The quarantine is empty."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:113
+msgid "Form:"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:114
+msgid "All forms"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:122
+msgid "Filter"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:126
+msgid "Date"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:131
+msgid "Actions"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:135
+msgid "No entries."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:153
+msgid "View"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:181
+msgid "Delete all entries of this form"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:181
+msgid "Delete all entries"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-quarantine.php:183
+msgid "Delete all these entries? This can not be undone."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-statistics.php:17
+msgid "Last 7 days"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-statistics.php:18
+msgid "Last 30 days"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-statistics.php:21
+msgid "Every submission of a Contact Form 7 form is counted once: sent, or the reasons why it was rejected (a submission may have several reasons). Only counters are stored, no personal data. Data older than 90 days is deleted."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-statistics.php:30
+msgid "No submissions counted yet."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-statistics.php:56
+msgid "Spam"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-statistics.php:57
+msgid "Validation errors"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-statistics.php:63
+msgid "Reason"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-statistics.php:64
+msgid "Count"
+msgstr ""
+
+#: includes/class-exopite-anti-spam-quarantine.php:378
+msgid "The form does not exist anymore, the entry can not be released."
+msgstr ""
+
+#: includes/class-exopite-anti-spam-quarantine.php:383
+msgid "The form has a required file field, attachments are not stored in the quarantine. The entry can not be released."
+msgstr ""
+
+#: includes/class-exopite-anti-spam-quarantine.php:403
+msgid "This entry is being released right now."
+msgstr ""
+
+#: includes/class-exopite-anti-spam-quarantine.php:425
+msgid "The submission was released and sent."
+msgstr ""
+
+#: includes/class-exopite-anti-spam-quarantine.php:432
+#, php-format
+msgid "The submission could not be released: %s"
+msgstr ""

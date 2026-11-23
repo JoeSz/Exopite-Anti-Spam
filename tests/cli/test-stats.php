@@ -42,6 +42,6 @@ delete_transient( 'eas_stats_cleanup' );
 $stats->maybe_clean_up();
 eas_assert( 0 === (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `$table` WHERE stat_date = %s AND form_id = %d", $old, $form_id ) ), 'rows older than 90 days deleted' );
 
-eas_assert( '4' === get_option( 'exopite_anti_spam_db_version' ), 'db version 4' );
+eas_assert( Exopite_Anti_Spam_Activator::DB_VERSION === get_option( 'exopite_anti_spam_db_version' ), 'db version current' );
 
 eas_done();

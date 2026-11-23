@@ -5,7 +5,7 @@ Tags: comments, spam
 Requires at least: 5.3
 Tested up to: 7.1
 Requires PHP: 7.0
-Stable tag: 20261123
+Stable tag: 20261124
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -37,6 +37,11 @@ The plugin adds a timestamp, a honeypot with random location, token matching, ba
 * Bad/spam word filtering
 * Honeypot with random location
 * E-Mail and domain blacklist
+* Statistics per form and reason (page "Anti Spam" in the Contact menu)
+* Quarantine for spam submissions per form, with view, release ("as if nothing had happened") and delete
+* Spam score with generic, language aware content rules per form
+* Rejection of disposable e-mail addresses and e-mail domains that do not exist per form
+* Invisible proof-of-work per form (no cookies, no external service)
 
 
 ### GDPR compliant
@@ -46,10 +51,14 @@ The plugin does not use sessions or cookies.
 * The limit of token requests (new timestamp, image captcha or acceptance token via AJAX: 60 requests per 10 minutes, then 2 minutes pause) stores only a hash of the IP address in a temporary entry (max. 12 minutes), not for logged in users.
 * The limit of failed attempts and the acceptance check use the IP address of the direct connection (REMOTE_ADDR). Behind a reverse proxy or CDN all visitors would share one address, the real IP (from a trusted header) can be passed with the filter <code>exopite_anti_spam_visitor_ip</code> (all IP checks and the logs) or <code>exopite_anti_spam_ratelimit_ip</code> (only the limit of failed attempts). For private and local addresses (e.g. 127.0.0.1, 192.168.x.x) the limit is disabled, unless the filter <code>exopite_anti_spam_ratelimit_allow_private_ip</code> returns true.
 * Logging is disabled by default. If it is enabled, the log files contain the shortened IP address (e.g. 192.168.1.0) and the submitted data (names, e-mail addresses, phone numbers and street addresses are masked). Log files are deleted after 30 days.
+* The statistics store only counters per day, form and reason (no personal data), for 90 days.
+* The quarantine is disabled by default and is activated per form. If it is enabled, spam submissions of the form (all fields, page URL, referer, user agent and the IP address) are stored for the retention time set on the "Blacklist" page (default 30 days, max. 1000 entries) and are visible to administrators only. Please mention it in the privacy policy. Uninstalling the plugin deletes the quarantine and the statistics.
+* The check of e-mail domains (disabled by default, per form) sends the domain name of the e-mail address to the DNS resolver of the server; the result is cached for a day. No other data leaves the server, no external service is used.
+* The proof-of-work (disabled by default, per form) runs in the browser of the visitor without cookies, local storage or requests to other servers.
 
 ### Simple to use settings page for each contact form
 You can turn on/off features in each form.
-Default for forms without saved settings: honeypot and timestamp are on, all other features (bad/spam words, image captcha AJAX loading, acceptance check, limit of failed attempts) are off. The defaults can be changed with the filters <code>exopite_enable_honeypot</code>, <code>exopite_enable_timestamp</code>, <code>exopite_enable_badwords</code> and <code>exopite_enable_ratelimit</code>.
+Default for forms without saved settings: honeypot and timestamp are on, all other features (bad/spam words, image captcha AJAX loading, acceptance check, limit of failed attempts, quarantine, spam score, e-mail checks, proof-of-work) are off. The defaults can be changed with the filters <code>exopite_enable_honeypot</code>, <code>exopite_enable_timestamp</code>, <code>exopite_enable_badwords</code> and <code>exopite_enable_ratelimit</code>.
 
 ### Text and error messages are translatable
 Texts and error messages can be translated into any language, so -in this way- they can be personalized.
@@ -119,6 +128,15 @@ The plugin allows you to filter certain email addresses and domains.
 2. Screenshot frontend
 
 == Changelog ==
+
+= 20261124 =
+* New: statistics, always active: every submission is counted once per day, form and reason (sent, mail failed, or the reasons of the anti spam checks with stable codes, e.g. honeypot, timestamp, captcha, too fast, bad words). New page "Anti Spam" in the Contact menu, tab "Statistics": last 7 and 30 days per form and reason. Only counters (table {prefix}eas_cf7_stats), rows older than 90 days are deleted
+* New: quarantine per form ("Anti Spam" tab, default off): spam submissions caused by the spam score, the honeypot or the proof-of-work are stored (sure bot signals like manipulated tokens only in the statistics). Tab "Quarantine" of the page "Anti Spam": list with form filter, view of all fields, release, delete, delete all. A release runs the whole Contact Form 7 submission again with the stored data, page URL, referer, user agent and IP address and without any anti spam check ("as if nothing had happened": mail, skip_mail, Flamingo, other plugins on wpcf7_before_send_mail / wpcf7_mail_sent / wpcf7_submit); success deletes the entry, an error is shown at the entry. Forms with a required file field can not be released (attachments are not stored). Retention (default 30 days) and maximum (default 1000 entries, the oldest are deleted) on the "Blacklist" page
+* New: spam score per form ("Anti Spam" tab, default off, threshold default 10): generic content rules, no single weak signal is enough. Latin word with Cyrillic look-alike letters 10, BBCode/HTML link 5, link or e-mail address in a name field 5, most letters in a script other than Latin and the form language 5 (the script of the form language is normal, e.g. Cyrillic on a Russian form; further scripts can be allowed per form), message with a link and almost no text 4, the same text in two fields 3, name of random looking letters 2 per field, every link after the second 2. Filters exopite_anti_spam_scoring_points and exopite_anti_spam_scoring_name_patterns
+* New: e-mail check per form ("Anti Spam" tab, default off): reject disposable e-mail addresses (list lists/disposable-domains.txt, filter exopite_anti_spam_disposable_domains) and domains without MX or A/AAAA record (DNS errors never reject, results cached for a day). A validation error at the e-mail field, the messages can be changed on the "Blacklist" page
+* New: invisible proof-of-work per form ("Anti Spam" tab, default off, difficulty low / medium / high): while the visitor fills out the form, a Web Worker solves a SHA-256 task (medium: about 1 second on a phone), a submit before that waits and is sent automatically. Every challenge is signed, encrypted and single use (token table type "pow"); a missing or wrong solution is spam. No cookies, no browser storage, no external service. Filter exopite_anti_spam_pow_bits
+* Dev: reason codes for all anti spam checks (Exopite_Anti_Spam_Public_Validate_Fields::get_codes()), function exopite_anti_spam() returns the plugin instance, CLI tests in the repository (tests/cli)
+* Translation: German texts of all new features (de_DE, de_DE_formal), .pot updated
 
 = 20261123 =
 * Security: limit of the token requests per visitor, like the challenge limit of Exopite Captcha: the AJAX requests for a new timestamp, image captcha or acceptance token (eap_reload_cf7_fields, eap_get_acceptance_token) are limited to 60 per 10 minutes per IP address (IPv6: per /64 network), then 2 minutes pause with HTTP 429 and Retry-After. A bot which asks for a new captcha or token for every guess is slowed down. Always active, independent of the "Limit failed attempts" form setting; not for logged in users and private IP addresses. The limit can be changed on the "Blacklist" settings page (requests, time window and pause in minutes; 0 requests = no limit, e.g. for many visitors behind one IP address), the filter exopite_anti_spam_token_request_limit (array max, window, pause in seconds) gets the saved values. Only a hash of the IP address is stored in a transient
