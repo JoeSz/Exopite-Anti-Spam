@@ -26,6 +26,8 @@ $custom_spam_words = isset( $options['custom_spam_words'] ) ? $options['custom_s
 $token_request_max = isset( $options['token_request_max'] ) ? intval( $options['token_request_max'] ) : Exopite_Anti_Spam_Public_Rate_Limiter::DEFAULT_TOKEN_REQUESTS;
 $token_request_window = isset( $options['token_request_window'] ) ? intval( $options['token_request_window'] ) : Exopite_Anti_Spam_Public_Rate_Limiter::DEFAULT_TOKEN_WINDOW_SECONDS / MINUTE_IN_SECONDS;
 $token_request_pause = isset( $options['token_request_pause'] ) ? intval( $options['token_request_pause'] ) : Exopite_Anti_Spam_Public_Rate_Limiter::DEFAULT_TOKEN_PAUSE_SECONDS / MINUTE_IN_SECONDS;
+// Quarantine: retention (days) and maximum number of entries.
+$quarantine_settings = $this->main->quarantine->get_settings();
 // Logging enabled: create the directory now, so the real path is shown (not only after the first log entry).
 $log_dir = Exopite_Anti_Spam_Logger::get_dir( $this->main->public->is_logging() );
 
@@ -90,6 +92,15 @@ $log_dir = Exopite_Anti_Spam_Logger::get_dir( $this->main->public->is_logging() 
         <label for="eas-token-request-pause"><?php esc_html_e( 'then pause (minutes):', 'exopite-anti-spam' ); ?></label>
         <input id="eas-token-request-pause" type="number" name="<?php echo esc_attr( $this->plugin_name ); ?>[token_request_pause]" value="<?php echo esc_attr( $token_request_pause ); ?>" min="1" max="1440" step="1">
         <p class="eas-field-instructions"><?php esc_html_e( 'The browser asks for a new timestamp, image captcha or acceptance token via AJAX (on every page view with "AJAX loading", after every unsuccessful submission and when an acceptance checkbox is checked). After this many requests from one IP address within the time window the visitor has to wait for the pause (HTTP 429), so a bot can not ask for a new captcha for every guess. Default: 60 requests in 10 minutes, 2 minutes pause. Many visitors behind one IP address (e.g. a large office or a school with "AJAX loading") may need a higher value; 0 = no limit. Logged in users and private IP addresses are not limited.', 'exopite-anti-spam' ); ?></p>
+    </div>
+
+    <div class="row">
+        <span class="eas-row-title"><?php esc_html_e( 'Quarantine', 'exopite-anti-spam' ); ?></span><br>
+        <label for="eas-quarantine-days"><?php esc_html_e( 'Keep entries (days):', 'exopite-anti-spam' ); ?></label>
+        <input id="eas-quarantine-days" type="number" name="<?php echo esc_attr( $this->plugin_name ); ?>[quarantine_days]" value="<?php echo esc_attr( $quarantine_settings['days'] ); ?>" min="1" max="365" step="1">
+        <label for="eas-quarantine-max"><?php esc_html_e( 'Maximum number of entries:', 'exopite-anti-spam' ); ?></label>
+        <input id="eas-quarantine-max" type="number" name="<?php echo esc_attr( $this->plugin_name ); ?>[quarantine_max]" value="<?php echo esc_attr( $quarantine_settings['max'] ); ?>" min="100" max="10000" step="1">
+        <p class="eas-field-instructions"><?php esc_html_e( 'The quarantine is activated per form ("Anti Spam" tab of the form). Entries older than this are deleted automatically, above the maximum the oldest entries are deleted. Default: 30 days, 1000 entries. The quarantine stores personal data (all fields and the IP address), please mention it in the privacy policy.', 'exopite-anti-spam' ); ?></p>
     </div>
 
     <?php submit_button( __( 'Save changes', 'exopite-anti-spam' ), 'primary','submit', TRUE ); ?>

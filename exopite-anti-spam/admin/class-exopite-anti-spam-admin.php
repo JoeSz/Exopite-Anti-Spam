@@ -336,6 +336,17 @@ class Exopite_Anti_Spam_Admin {
             $extra
         );
 
+        // Quarantine
+        $checked = $this->main->quarantine->is_active( isset( $options[0] ) ? $options[0] : false );
+
+        $this->panel_switch_row(
+            'eas-activate-quarantine',
+            __( 'Quarantine', 'exopite-anti-spam' ),
+            esc_html__( 'Submissions marked as spam because of the spam score, the honeypot or the proof-of-work are stored in the quarantine (sure bot signals like manipulated tokens are not). On the page "Anti Spam" (Contact menu) an administrator can view them, delete them or release them: a released submission is sent as if nothing had happened (mail and all other functions of the form). The visitor still gets the spam message. The quarantine stores personal data (all fields and the IP address) for the retention time set on the "Blacklist" page, please mention it in the privacy policy.', 'exopite-anti-spam' ),
+            __( 'Activate quarantine', 'exopite-anti-spam' ),
+            $checked
+        );
+
     }
 
     public function wpcf7_editor_panels( $panels ) {
@@ -436,6 +447,7 @@ class Exopite_Anti_Spam_Admin {
             'ajaxload'              => $ajaxload,
             'acceptance_ajaxcheck'  => $acceptance_ajaxcheck,
             'ratelimit'             => $ratelimit,
+            'quarantine'            => isset( $_POST['eas-activate-quarantine'] ) ? 'yes' : 'no',
         );
 
         update_post_meta( $post_id, 'exopite-anti-spam', $anti_spam_options );
@@ -527,6 +539,9 @@ class Exopite_Anti_Spam_Admin {
             'token_request_max'    => array( 0, 10000, Exopite_Anti_Spam_Public_Rate_Limiter::DEFAULT_TOKEN_REQUESTS ),
             'token_request_window' => array( 1, 1440, Exopite_Anti_Spam_Public_Rate_Limiter::DEFAULT_TOKEN_WINDOW_SECONDS / MINUTE_IN_SECONDS ),
             'token_request_pause'  => array( 1, 1440, Exopite_Anti_Spam_Public_Rate_Limiter::DEFAULT_TOKEN_PAUSE_SECONDS / MINUTE_IN_SECONDS ),
+            // Quarantine: retention in days and maximum number of entries.
+            'quarantine_days'      => array( 1, 365, Exopite_Anti_Spam_Quarantine::DEFAULT_DAYS ),
+            'quarantine_max'       => array( 100, 10000, Exopite_Anti_Spam_Quarantine::DEFAULT_MAX ),
         );
 
         foreach ( $number_fields as $field => $range ) {

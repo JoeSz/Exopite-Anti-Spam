@@ -117,6 +117,13 @@ class Exopite_Anti_Spam {
     public $stats;
 
     /**
+     * Quarantine of spam submissions.
+     *
+     * @var Exopite_Anti_Spam_Quarantine
+     */
+    public $quarantine;
+
+    /**
      * Store plugin admin class to allow public access.
      *
      * @since    20180622
@@ -172,6 +179,7 @@ class Exopite_Anti_Spam {
         $this->tokens = new Exopite_Anti_Spam_Token( $this->main );
         $this->page_cache = new Exopite_Anti_Spam_Page_Cache( $this->plugin_name, $this->main );
         $this->stats = new Exopite_Anti_Spam_Stats( $this->main );
+        $this->quarantine = new Exopite_Anti_Spam_Quarantine( $this->main );
 
         $this->set_locale();
         $this->define_admin_hooks();
@@ -237,6 +245,7 @@ class Exopite_Anti_Spam {
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-page-cache.php';
 
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-stats.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-quarantine.php';
 
         // Global class name without prefix: other plugins may contain the same class.
         if ( ! class_exists( 'RemoteAddress' ) ) {
@@ -483,6 +492,9 @@ class Exopite_Anti_Spam {
 
         // DEBUG
         $this->loader->add_action( 'wpcf7_submit', $this->public, 'wpcf7_submit', 20, 2 );
+
+        // Quarantine: store spam of forms with quarantine enabled
+        $this->loader->add_action( 'wpcf7_submit', $this->quarantine, 'wpcf7_submit', 90, 2 );
 
         // Statistics: count every submission once, after the rate limit and the quarantine
         $this->loader->add_action( 'wpcf7_submit', $this->stats, 'wpcf7_submit', 100, 2 );
