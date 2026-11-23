@@ -261,4 +261,354 @@ class Exopite_Anti_Spam_Quarantine {
 			$wpdb->query( $wpdb->prepare( 'DELETE FROM `' . $this->table() . '` ORDER BY id ASC LIMIT %d', $count - $settings['max'] ) );
 		}
 	}
+
+	/**
+	 * Decode the JSON columns of an entry.
+	 *
+	 * @param array $row Database row.
+	 * @return array
+	 */
+	private function decode_row( $row ) {
+
+		foreach ( array( 'reasons', 'posted_data', 'meta' ) as $column ) {
+			if ( isset( $row[ $column ] ) ) {
+				$decoded        = json_decode( (string) $row[ $column ], true );
+				$row[ $column ] = is_array( $decoded ) ? $decoded : array();
+			}
+		}
+
+		if ( isset( $row['reasons'] ) ) {
+			$row['reasons'] = array_merge(
+				array(
+					'codes' => array(),
+					'log'   => array(),
+				),
+				$row['reasons']
+			);
+		}
+
+		foreach ( array( 'id', 'form_id', 'score', 'has_files' ) as $column ) {
+			if ( isset( $row[ $column ] ) ) {
+				$row[ $column ] = (int) $row[ $column ];
+			}
+		}
+
+		return $row;
+	}
+
+	/**
+	 * One entry with all data.
+	 *
+	 * @param int $id Entry ID.
+	 * @return array|null
+	 */
+	public function get_entry( $id ) {
+		global $wpdb;
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				'SELECT id, created, form_id, reasons, score, posted_data, meta, has_files, release_error
+				FROM `' . $this->table() . '`
+				WHERE id = %d',
+				$id
+			),
+			ARRAY_A
+		);
+
+		return $row ? $this->decode_row( $row ) : null;
+	}
+
+	/**
+	 * Entries for the list (without the submitted data), newest first.
+	 *
+	 * @param int $form_id  Only this form, 0: all forms.
+	 * @param int $page     Page (1 ...).
+	 * @param int $per_page Entries per page.
+	 * @return array array( 'items' => array[], 'total' => int )
+	 */
+	public function get_entries( $form_id, $page, $per_page ) {
+		global $wpdb;
+
+		$where  = $form_id ? $wpdb->prepare( 'WHERE form_id = %d', $form_id ) : '';
+		$offset = max( 0, ( max( 1, (int) $page ) - 1 ) * (int) $per_page );
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where is prepared above.
+		$total = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM `' . $this->table() . '` ' . $where );
+		$rows  = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT id, created, form_id, reasons, score, has_files, release_error
+				FROM `' . $this->table() . '` ' . $where . '
+				ORDER BY id DESC
+				LIMIT %d OFFSET %d',
+				$per_page,
+				$offset
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return array(
+			'items' => array_map( array( $this, 'decode_row' ), is_array( $rows ) ? $rows : array() ),
+			'total' => $total,
+		);
+	}
+
+	/**
+	 * IDs of the forms with entries.
+	 *
+	 * @return int[]
+	 */
+	public function get_form_ids() {
+		global $wpdb;
+
+		return array_map( 'intval', (array) $wpdb->get_col( 'SELECT DISTINCT form_id FROM `' . $this->table() . '` ORDER BY form_id ASC' ) );
+	}
+
+	/**
+	 * Can the entry be released?
+	 *
+	 * @param array $entry Entry (get_entry()).
+	 * @return true|string True or the reason, why not.
+	 */
+	public function is_releasable( $entry ) {
+
+		$contact_form = function_exists( 'wpcf7_contact_form' ) ? wpcf7_contact_form( $entry['form_id'] ) : null;
+
+		if ( ! $contact_form ) {
+			return __( 'The form does not exist anymore, the entry can not be released.', 'exopite-anti-spam' );
+		}
+
+		// Attachments are not stored: the validation of a required file field would always fail.
+		if ( $contact_form->scan_form_tags( array( 'type' => 'file*' ) ) ) {
+			return __( 'The form has a required file field, attachments are not stored in the quarantine. The entry can not be released.', 'exopite-anti-spam' );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Release an entry: run the whole Contact Form 7 submission with the stored data, without the anti spam checks.
+	 * Success: the entry is deleted. Failure: the reason is stored in release_error, the entry is kept.
+	 *
+	 * @param int $id Entry ID.
+	 * @return array array( 'ok' => bool, 'status' => string, 'message' => string )
+	 */
+	public function release( $id ) {
+		global $wpdb;
+
+		// A double click must not release the entry twice.
+		$lock = 'eas_q_' . md5( $wpdb->prefix . $id );
+
+		if ( '1' !== $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK( %s, 0 )', $lock ) ) ) {
+			return $this->release_result( false, 'locked', __( 'This entry is being released right now.', 'exopite-anti-spam' ) );
+		}
+
+		try {
+
+			$entry = $this->get_entry( $id );
+
+			if ( ! $entry ) {
+				return $this->release_result( false, 'not_found', __( 'The entry does not exist anymore.', 'exopite-anti-spam' ) );
+			}
+
+			$releasable = $this->is_releasable( $entry );
+
+			if ( true !== $releasable ) {
+				return $this->release_result( false, 'not_releasable', $releasable );
+			}
+
+			$result = $this->submit_entry( $entry );
+			$status = isset( $result['status'] ) ? (string) $result['status'] : '';
+
+			if ( 'mail_sent' === $status ) {
+				$this->delete( $id );
+				return $this->release_result( true, $status, __( 'The submission was released and sent.', 'exopite-anti-spam' ) );
+			}
+
+			$error = $this->get_result_error( $result );
+			$wpdb->update( $this->table(), array( 'release_error' => $error ), array( 'id' => (int) $id ), array( '%s' ), array( '%d' ) );
+
+			/* translators: %s: error (status of Contact Form 7 and invalid fields) */
+			return $this->release_result( false, $status, sprintf( __( 'The submission could not be released: %s', 'exopite-anti-spam' ), $error ) );
+
+		} finally {
+			$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK( %s )', $lock ) );
+		}
+	}
+
+	/**
+	 * Result array of release().
+	 *
+	 * @param bool   $ok      Released.
+	 * @param string $status  Status code.
+	 * @param string $message Message for the admin.
+	 * @return array
+	 */
+	private function release_result( $ok, $status, $message ) {
+
+		return array(
+			'ok'      => (bool) $ok,
+			'status'  => (string) $status,
+			'message' => (string) $message,
+		);
+	}
+
+	/**
+	 * Status and invalid fields of an unsuccessful submission as text.
+	 *
+	 * @param array $result Contact Form 7 result.
+	 * @return string
+	 */
+	private function get_result_error( $result ) {
+
+		$error  = isset( $result['status'] ) ? (string) $result['status'] : 'error';
+		$fields = array();
+
+		if ( ! empty( $result['invalid_fields'] ) && is_array( $result['invalid_fields'] ) ) {
+			foreach ( $result['invalid_fields'] as $name => $field ) {
+				$message  = is_array( $field ) && isset( $field['message'] ) ? $field['message'] : ( is_array( $field ) && isset( $field['reason'] ) ? $field['reason'] : '' );
+				$label    = is_array( $field ) && isset( $field['field'] ) ? $field['field'] : $name;
+				$fields[] = $label . ': ' . $message;
+			}
+		}
+
+		return $fields ? $error . ' (' . implode( '; ', $fields ) . ')' : $error;
+	}
+
+	/**
+	 * Run the Contact Form 7 submission with the stored request: $_POST, referer, user agent, request URI
+	 * (the "url" meta of the submission), IP address and the global $post of the page with the form.
+	 * Everything is restored afterwards.
+	 *
+	 * @param array $entry Entry (get_entry()).
+	 * @return array Contact Form 7 result.
+	 */
+	private function submit_entry( $entry ) {
+
+		$meta        = $entry['meta'];
+		$server_keys = array( 'HTTP_REFERER', 'HTTP_USER_AGENT', 'REQUEST_URI' );
+		$backup      = array(
+			'post'        => $_POST, // phpcs:ignore WordPress.Security.NonceVerification.Missing -- restored below.
+			'request'     => $_REQUEST, // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- restored below.
+			'global_post' => isset( $GLOBALS['post'] ) ? $GLOBALS['post'] : null,
+			'server'      => array(),
+		);
+
+		foreach ( $server_keys as $key ) {
+			$backup['server'][ $key ] = isset( $_SERVER[ $key ] ) ? $_SERVER[ $key ] : null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- restored below.
+		}
+
+		$container_post = isset( $meta['container_post'] ) ? (int) $meta['container_post'] : 0;
+		$url            = isset( $meta['url'] ) ? (string) $meta['url'] : '';
+		$path           = wp_parse_url( $url, PHP_URL_PATH );
+		$query          = wp_parse_url( $url, PHP_URL_QUERY );
+		$remote_ip      = isset( $meta['remote_ip'] ) ? (string) $meta['remote_ip'] : '';
+
+		$_POST = wp_slash(
+			array_merge(
+				(array) $entry['posted_data'],
+				array(
+					'_wpcf7'                => $entry['form_id'],
+					'_wpcf7_version'        => defined( 'WPCF7_VERSION' ) ? WPCF7_VERSION : '',
+					'_wpcf7_locale'         => isset( $meta['locale'] ) ? $meta['locale'] : '',
+					'_wpcf7_unit_tag'       => isset( $meta['unit_tag'] ) ? $meta['unit_tag'] : '',
+					'_wpcf7_container_post' => $container_post,
+				)
+			)
+		);
+
+		$_REQUEST                   = $_POST; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- set right above.
+		$_SERVER['HTTP_REFERER']    = isset( $meta['referer'] ) ? $meta['referer'] : '';
+		$_SERVER['HTTP_USER_AGENT'] = isset( $meta['user_agent'] ) ? $meta['user_agent'] : '';
+		$_SERVER['REQUEST_URI']     = ( $path ? $path : '/' ) . ( $query ? '?' . $query : '' );
+		$GLOBALS['post']            = $container_post ? get_post( $container_post ) : null; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- the page of the form, restored below.
+
+		$ip_filter = function () use ( $remote_ip ) {
+			return $remote_ip;
+		};
+
+		/**
+		 * Contact Form 7 caches the request URI on "init" (wpcf7_get_request_uri()), so the "url" meta would be the
+		 * URL of admin-post.php. It is set to the stored URL right after the meta data is collected
+		 * (setup_meta_data() runs just before the 'wpcf7_posted_data' filter), e.g. for plugins which send the page URL.
+		 */
+		$url_filter = function ( $posted_data ) use ( $url ) {
+
+			$submission = WPCF7_Submission::get_instance();
+
+			if ( $submission && '' !== $url && property_exists( $submission, 'meta' ) ) {
+				$property = new ReflectionProperty( 'WPCF7_Submission', 'meta' );
+				$property->setAccessible( true );
+				$meta = $property->getValue( $submission );
+
+				if ( is_array( $meta ) ) {
+					$meta['url'] = $url;
+					$property->setValue( $submission, $meta );
+				}
+			}
+
+			return $posted_data;
+		};
+
+		add_filter( 'wpcf7_remote_ip_addr', $ip_filter, 999 );
+		add_filter( 'wpcf7_posted_data', $url_filter, 1 );
+		add_filter( 'wpcf7_skip_spam_check', '__return_true', 999 );
+
+		$this->main->releasing = true;
+		$this->released_codes  = $entry['reasons']['codes'];
+
+		try {
+			$result = wpcf7_contact_form( $entry['form_id'] )->submit();
+		} finally {
+
+			$this->main->releasing = false;
+			$this->released_codes  = array();
+
+			remove_filter( 'wpcf7_remote_ip_addr', $ip_filter, 999 );
+			remove_filter( 'wpcf7_posted_data', $url_filter, 1 );
+			remove_filter( 'wpcf7_skip_spam_check', '__return_true', 999 );
+
+			$_POST           = $backup['post'];
+			$_REQUEST        = $backup['request'];
+			$GLOBALS['post'] = $backup['global_post']; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- restore.
+
+			foreach ( $backup['server'] as $key => $value ) {
+				if ( null === $value ) {
+					unset( $_SERVER[ $key ] );
+				} else {
+					$_SERVER[ $key ] = $value;
+				}
+			}
+		}
+
+		return is_array( $result ) ? $result : array();
+	}
+
+	/**
+	 * Delete one entry.
+	 *
+	 * @param int $id Entry ID.
+	 * @return bool
+	 */
+	public function delete( $id ) {
+		global $wpdb;
+
+		return (bool) $wpdb->delete( $this->table(), array( 'id' => (int) $id ), array( '%d' ) );
+	}
+
+	/**
+	 * Delete all entries of a form or all entries.
+	 *
+	 * @param int $form_id Form ID, 0: all forms.
+	 * @return int Number of deleted entries.
+	 */
+	public function delete_all( $form_id = 0 ) {
+		global $wpdb;
+
+		if ( $form_id ) {
+			return (int) $wpdb->delete( $this->table(), array( 'form_id' => (int) $form_id ), array( '%d' ) );
+		}
+
+		return (int) $wpdb->query( 'DELETE FROM `' . $this->table() . '`' );
+	}
 }
