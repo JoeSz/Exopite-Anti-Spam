@@ -33,6 +33,15 @@
             $('.eas-ratelimit-values').show();
         }
 
+        // Quarantine actions (release, delete, delete all): ask first
+        $(document).on('submit', 'form[data-eas-confirm]', function (e) {
+            var question = $(this).data('eas-confirm');
+
+            if (question && !window.confirm(question)) {
+                e.preventDefault();
+            }
+        });
+
     });
 
 }(jQuery));

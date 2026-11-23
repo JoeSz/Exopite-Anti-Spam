@@ -126,7 +126,142 @@ class Exopite_Anti_Spam_Admin_Overview {
 	 */
 	public function render_quarantine() {
 
-		echo '<p>' . esc_html__( 'The quarantine is not available yet.', 'exopite-anti-spam' ) . '</p>';
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- only selects what is shown.
+		$eas_form_filter = isset( $_GET['form'] ) ? absint( $_GET['form'] ) : 0;
+		$eas_paged       = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
+		$eas_entry_id    = isset( $_GET['entry'] ) ? absint( $_GET['entry'] ) : 0;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		$eas_quarantine = $this->main->quarantine;
+		$eas_quarantine->maybe_clean_up();
+
+		$this->render_notice();
+
+		$eas_entry = $eas_entry_id ? $eas_quarantine->get_entry( $eas_entry_id ) : null;
+
+		if ( $eas_entry_id && ! $eas_entry ) {
+			echo '<div class="notice notice-warning"><p>' . esc_html__( 'The entry does not exist anymore.', 'exopite-anti-spam' ) . '</p></div>';
+		}
+
+		include __DIR__ . '/partials/exopite-anti-spam-admin-quarantine.php';
+	}
+
+	/**
+	 * Is the quarantine activated in any form?
+	 *
+	 * @return bool
+	 */
+	public function is_quarantine_used() {
+
+		$forms = get_posts(
+			array(
+				'post_type'      => 'wpcf7_contact_form',
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+			)
+		);
+
+		foreach ( $forms as $form_id ) {
+			if ( $this->main->quarantine->is_active( get_post_meta( $form_id, 'exopite-anti-spam', true ) ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Small POST form for an action (release, delete, delete all), with nonce and confirmation (admin JS).
+	 *
+	 * @param string $action      'release', 'delete' or 'delete_all'.
+	 * @param int    $id          Entry ID, for 'delete_all' the form ID (0: all forms).
+	 * @param int    $form_filter Form filter of the list (for the redirect).
+	 * @param string $label       Button text.
+	 * @param string $button_class Additional button class.
+	 * @param string $confirm     Confirmation question.
+	 */
+	public function render_action_button( $action, $id, $form_filter, $label, $button_class, $confirm ) {
+
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="eas-quarantine-action" data-eas-confirm="' . esc_attr( $confirm ) . '">';
+		echo '<input type="hidden" name="action" value="eas_quarantine">';
+		echo '<input type="hidden" name="do" value="' . esc_attr( $action ) . '">';
+		echo '<input type="hidden" name="id" value="' . esc_attr( (int) $id ) . '">';
+		echo '<input type="hidden" name="form_filter" value="' . esc_attr( (int) $form_filter ) . '">';
+		wp_nonce_field( 'eas_quarantine_' . $action . '_' . (int) $id );
+		echo '<button type="submit" class="button ' . esc_attr( $button_class ) . '">' . esc_html( $label ) . '</button>';
+		echo '</form>';
+	}
+
+	/**
+	 * Release, delete or delete all. Hook: admin_post_eas_quarantine.
+	 */
+	public function handle_action() {
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Sorry, you are not allowed to do this.', 'exopite-anti-spam' ), '', array( 'response' => 403 ) );
+		}
+
+		$action      = isset( $_POST['do'] ) ? sanitize_key( wp_unslash( $_POST['do'] ) ) : '';
+		$id          = isset( $_POST['id'] ) ? absint( $_POST['id'] ) : 0;
+		$form_filter = isset( $_POST['form_filter'] ) ? absint( $_POST['form_filter'] ) : 0;
+
+		if ( ! in_array( $action, array( 'release', 'delete', 'delete_all' ), true ) ) {
+			wp_die( esc_html__( 'Invalid request.', 'exopite-anti-spam' ), '', array( 'response' => 400 ) );
+		}
+
+		check_admin_referer( 'eas_quarantine_' . $action . '_' . $id );
+
+		$quarantine = $this->main->quarantine;
+		$type       = 'success';
+
+		if ( 'release' === $action ) {
+
+			$result  = $quarantine->release( $id );
+			$type    = $result['ok'] ? 'success' : 'error';
+			$message = $result['message'];
+
+		} elseif ( 'delete' === $action ) {
+
+			$message = $quarantine->delete( $id ) ? __( 'The entry was deleted.', 'exopite-anti-spam' ) : __( 'The entry does not exist anymore.', 'exopite-anti-spam' );
+
+		} else {
+
+			$count = $quarantine->delete_all( $id );
+			/* translators: %d: number of deleted entries */
+			$message = sprintf( _n( '%d entry was deleted.', '%d entries were deleted.', $count, 'exopite-anti-spam' ), $count );
+		}
+
+		set_transient(
+			'eas_quarantine_notice_' . get_current_user_id(),
+			array(
+				'type'    => $type,
+				'message' => $message,
+			),
+			MINUTE_IN_SECONDS
+		);
+
+		wp_safe_redirect( $this->get_url( array( 'form' => $form_filter ? $form_filter : null ) ) );
+		exit;
+	}
+
+	/**
+	 * Result of the last action (handle_action()), shown once.
+	 */
+	public function render_notice() {
+
+		$key    = 'eas_quarantine_notice_' . get_current_user_id();
+		$notice = get_transient( $key );
+
+		if ( ! is_array( $notice ) || empty( $notice['message'] ) ) {
+			return;
+		}
+
+		delete_transient( $key );
+
+		$notice_class = 'error' === $notice['type'] ? 'notice-error' : 'notice-success';
+
+		echo '<div class="notice ' . esc_attr( $notice_class ) . ' is-dismissible"><p>' . esc_html( $notice['message'] ) . '</p></div>';
 	}
 
 	/**

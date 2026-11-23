@@ -312,6 +312,7 @@ class Exopite_Anti_Spam {
         // Page "Anti Spam": quarantine and statistics
         $this->overview = new Exopite_Anti_Spam_Admin_Overview( $this->get_plugin_name(), $this->main );
         $this->loader->add_action( 'admin_menu', $this->overview, 'add_menu' );
+        $this->loader->add_action( 'admin_post_eas_quarantine', $this->overview, 'handle_action' );
 
         $this->loader->add_filter( 'wpcf7_admin_init', $this->admin, 'wpcf7_admin_init', 55 );
         $this->loader->add_action( 'wpcf7_editor_panels', $this->admin, 'wpcf7_editor_panels', 10, 1 );

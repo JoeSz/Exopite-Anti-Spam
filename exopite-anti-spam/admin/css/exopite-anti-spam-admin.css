@@ -101,3 +101,18 @@ textarea.eas-form-field {
 .eas-ratelimit-values input {
     width: 100px;
 }
+
+/* Page "Anti Spam": action buttons of the quarantine side by side */
+.eas-quarantine-action {
+    display: inline-block;
+    margin: 0 8px 8px 0;
+}
+
+.eas-quarantine-filter {
+    margin: 1em 0;
+}
+
+.eas-quarantine-entry th,
+.eas-quarantine-data th {
+    width: 200px;
+}
