@@ -121,7 +121,7 @@ function eas_reset_request_state() {
 	$main->ratelimiter->blocked = false;
 	$main->public->cf7_meta     = array();
 
-	foreach ( array( 'scoring', 'pow' ) as $part ) {
+	foreach ( array( 'scoring', 'pow', 'email_check' ) as $part ) {
 		if ( isset( $main->$part ) && method_exists( $main->$part, 'reset' ) ) {
 			$main->$part->reset();
 		}

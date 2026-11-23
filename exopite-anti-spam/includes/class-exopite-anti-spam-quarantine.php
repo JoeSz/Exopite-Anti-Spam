@@ -44,6 +44,17 @@ class Exopite_Anti_Spam_Quarantine {
 	const MAX_VALUE_LENGTH = 20000;
 
 	/**
+	 * Submissions with more fields or more data are not stored (only counted in the statistics).
+	 */
+	const MAX_FIELDS      = 200;
+	const MAX_ENTRY_BYTES = 262144;
+
+	/**
+	 * Fields of Contact Form 7, which are set again on release (or not needed: the nonce).
+	 */
+	const CORE_FIELDS = array( '_wpcf7', '_wpcf7_version', '_wpcf7_locale', '_wpcf7_unit_tag', '_wpcf7_container_post', '_wpcf7_posted_data_hash', '_wpnonce' );
+
+	/**
 	 * Plugin main class.
 	 *
 	 * @var Exopite_Anti_Spam
@@ -156,19 +167,36 @@ class Exopite_Anti_Spam_Quarantine {
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Contact Form 7 submission, stored for the admin.
 		$post       = wp_unslash( $_POST );
-		$internal   = $this->get_internal_fields();
+		$internal   = array_merge( $this->get_internal_fields(), self::CORE_FIELDS );
 		$posted     = array();
+		$extra      = array();
 		$submission = WPCF7_Submission::get_instance();
 
 		foreach ( (array) $post as $key => $value ) {
 
 			$key = (string) $key;
 
-			if ( in_array( $key, $internal, true ) || 0 === strpos( $key, '_wpcf7' ) ) {
+			if ( in_array( $key, $internal, true ) ) {
 				continue;
 			}
 
-			$posted[ $key ] = $this->shorten( $value );
+			/*
+			 * Other hidden fields of plugins (e.g. "_wpcf7cf_hidden_groups" of Conditional Fields for CF7) are not shown
+			 * as submitted data, but they are sent again on release.
+			 */
+			if ( 0 === strpos( $key, '_' ) ) {
+				$extra[ $key ] = $this->shorten( $value );
+			} else {
+				$posted[ $key ] = $this->shorten( $value );
+			}
+		}
+
+		$posted_json = wp_json_encode( $posted );
+		$extra_json  = wp_json_encode( $extra );
+
+		// A bot could send thousands of fields: such a submission is only counted in the statistics.
+		if ( count( $posted ) + count( $extra ) > self::MAX_FIELDS || strlen( $posted_json . $extra_json ) > self::MAX_ENTRY_BYTES ) {
+			return false;
 		}
 
 		$meta = array(
@@ -179,6 +207,8 @@ class Exopite_Anti_Spam_Quarantine {
 			'container_post' => isset( $post['_wpcf7_container_post'] ) ? absint( $post['_wpcf7_container_post'] ) : 0,
 			'unit_tag'       => isset( $post['_wpcf7_unit_tag'] ) && is_string( $post['_wpcf7_unit_tag'] ) ? sanitize_text_field( $post['_wpcf7_unit_tag'] ) : '',
 			'locale'         => isset( $post['_wpcf7_locale'] ) && is_string( $post['_wpcf7_locale'] ) ? sanitize_text_field( $post['_wpcf7_locale'] ) : '',
+			'extra_post'     => $extra,
+			'user_id'        => get_current_user_id(),
 		);
 
 		$reasons = array(
@@ -193,7 +223,7 @@ class Exopite_Anti_Spam_Quarantine {
 				'form_id'     => (int) $contact_form->id(),
 				'reasons'     => wp_json_encode( $reasons ),
 				'score'       => (int) $score,
-				'posted_data' => wp_json_encode( $posted ),
+				'posted_data' => $posted_json,
 				'meta'        => wp_json_encode( $meta ),
 				'has_files'   => $contact_form->scan_form_tags( array( 'type' => array( 'file', 'file*' ) ) ) ? 1 : 0,
 			),
@@ -507,6 +537,7 @@ class Exopite_Anti_Spam_Quarantine {
 		$_POST = wp_slash(
 			array_merge(
 				(array) $entry['posted_data'],
+				isset( $meta['extra_post'] ) && is_array( $meta['extra_post'] ) ? $meta['extra_post'] : array(),
 				array(
 					'_wpcf7'                => $entry['form_id'],
 					'_wpcf7_version'        => defined( 'WPCF7_VERSION' ) ? WPCF7_VERSION : '',
@@ -538,7 +569,11 @@ class Exopite_Anti_Spam_Quarantine {
 
 			if ( $submission && '' !== $url && property_exists( $submission, 'meta' ) ) {
 				$property = new ReflectionProperty( 'WPCF7_Submission', 'meta' );
-				$property->setAccessible( true );
+
+				// Needed before PHP 8.1, deprecated since PHP 8.5.
+				if ( PHP_VERSION_ID < 80100 ) {
+					$property->setAccessible( true );
+				}
 				$meta = $property->getValue( $submission );
 
 				if ( is_array( $meta ) ) {
@@ -557,9 +592,16 @@ class Exopite_Anti_Spam_Quarantine {
 		$this->main->releasing = true;
 		$this->released_codes  = $entry['reasons']['codes'];
 
+		// As the user of the submission (usually a visitor, 0), not as the admin (e.g. [_user_email] would be the admin).
+		$user_id        = get_current_user_id();
+		$submitted_user = isset( $meta['user_id'] ) ? (int) $meta['user_id'] : 0;
+		wp_set_current_user( $submitted_user && get_userdata( $submitted_user ) ? $submitted_user : 0 );
+
 		try {
 			$result = wpcf7_contact_form( $entry['form_id'] )->submit();
 		} finally {
+
+			wp_set_current_user( $user_id );
 
 			$this->main->releasing = false;
 			$this->released_codes  = array();

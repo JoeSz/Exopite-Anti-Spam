@@ -500,6 +500,8 @@ class Exopite_Anti_Spam {
         // E-mail check per form: disposable addresses, domains without MX (after the blacklist)
         $this->loader->add_filter( 'wpcf7_validate_email', $this->email_check, 'validate', 25, 2 );
         $this->loader->add_filter( 'wpcf7_validate_email*', $this->email_check, 'validate', 25, 2 );
+        // DNS check after the bot checks (rate limit 5, timestamp/tokens/proof-of-work 30): bots cause no DNS requests
+        $this->loader->add_filter( 'wpcf7_validate', $this->email_check, 'validate_mx', 40, 2 );
 
         /**
          * Compatibility with "Conditional Fields for Contact Form 7" plugin:

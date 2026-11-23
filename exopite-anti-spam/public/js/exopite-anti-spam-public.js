@@ -43,6 +43,7 @@
                 ready: false,
                 loading: false,
                 waiting: false,
+                bypass: false,
                 worker: null
             };
 
@@ -72,7 +73,7 @@
                         return;
                     }
                     // Proof-of-work not solved yet: hold the submit, it is sent automatically when the solution is ready.
-                    if (plugin.pow.active && !plugin.pow.ready) {
+                    if (plugin.pow.active && !plugin.pow.ready && !plugin.pow.bypass) {
                         e.preventDefault();
                         e.stopImmediatePropagation();
                         plugin.pow.waiting = true;
@@ -158,10 +159,6 @@
                     // Allow a new request (e.g. the next click on the acceptance checkbox)
                     plugin.loadingAcceptance = false;
                     plugin.$element.find('.loading').removeClass('loading');
-                    // Proof-of-work: the next submit asks again (e.g. after HTTP 429).
-                    plugin.pow.loading = false;
-                    plugin.pow.waiting = false;
-                    plugin.$element.find('.eas-pow-waiting').removeClass('eas-pow-waiting');
                     console.log( 'Status: ' + xhr.status );
                     console.log( 'Error: ' + xhr.responseText );
                 },
@@ -174,31 +171,67 @@
             }
             plugin.pow.loading = true;
 
-            plugin.doAjax({
-                'action': 'eap_reload_cf7_fields',
-                'pow': plugin.pow.formId,
-            }, plugin.processPow);
+            $.ajax({
+                cache: false,
+                type: 'POST',
+                url: plugin.ajaxUrl,
+                data: {
+                    'action': 'eap_reload_cf7_fields',
+                    'pow': plugin.pow.formId,
+                },
+                success: function (response) {
+                    plugin.processPow(response);
+                },
+                error: function () {
+                    // E.g. HTTP 429 (limit of token requests).
+                    plugin.powFailed();
+                },
+            });
         },
-        processPow: function (response, status, plugin) {
+        processPow: function (response) {
+            var plugin = this;
             var data = {};
             try {
                 data = JSON.parse(response);
             } catch (error) {}
 
+            // No challenge: proof-of-work is not active (anymore) for the form, e.g. an old cached page.
             if (!data.pow || !data.pow.c) {
-                plugin.pow.loading = false;
-                plugin.pow.waiting = false;
-                plugin.$element.find('.eas-pow-waiting').removeClass('eas-pow-waiting');
+                plugin.pow.active = false;
+                plugin.powFailed();
                 return;
             }
 
             plugin.$powChallenge.val(data.pow.c);
+            plugin.startWorker(plugin.pow.workerUrl, data.pow, true);
+        },
+        startWorker: function (url, challenge, retryWithBlob) {
+            var plugin = this;
+            var worker;
 
             if (plugin.pow.worker) {
                 plugin.pow.worker.terminate();
+                plugin.pow.worker = null;
             }
 
-            var worker = new window.Worker(plugin.pow.workerUrl);
+            try {
+                worker = new window.Worker(url);
+            } catch (error) {
+                // A worker URL on another host (e.g. CDN) is not allowed: load the script and start it from a Blob.
+                if (retryWithBlob && window.fetch && window.Blob && window.URL) {
+                    window.fetch(url).then(function (response) {
+                        return response.text();
+                    }).then(function (code) {
+                        plugin.startWorker(window.URL.createObjectURL(new window.Blob([code], { type: 'text/javascript' })), challenge, false);
+                    }).catch(function () {
+                        plugin.powFailed();
+                    });
+                } else {
+                    plugin.powFailed();
+                }
+                return;
+            }
+
             plugin.pow.worker = worker;
 
             worker.onmessage = function (event) {
@@ -207,8 +240,7 @@
                 plugin.pow.loading = false;
 
                 if (!event.data || !event.data.nonce) {
-                    plugin.pow.waiting = false;
-                    plugin.$element.find('.eas-pow-waiting').removeClass('eas-pow-waiting');
+                    plugin.powFailed();
                     return;
                 }
 
@@ -224,12 +256,26 @@
 
             worker.onerror = function () {
                 plugin.pow.worker = null;
-                plugin.pow.loading = false;
-                plugin.pow.waiting = false;
-                plugin.$element.find('.eas-pow-waiting').removeClass('eas-pow-waiting');
+                plugin.powFailed();
             };
 
-            worker.postMessage({ salt: data.pow.s, bits: data.pow.b });
+            worker.postMessage({ salt: challenge.s, bits: challenge.b });
+        },
+        /**
+         * No solution (request error, no challenge, worker error): a held submit is sent anyway, the server decides
+         * (spam message, quarantine, or a normal send if the proof-of-work is not active for the form).
+         * The form never stays blocked.
+         */
+        powFailed: function () {
+            var plugin = this;
+            plugin.pow.loading = false;
+
+            if (plugin.pow.waiting) {
+                plugin.pow.waiting = false;
+                plugin.pow.bypass = true;
+                plugin.$element.find('.eas-pow-waiting').removeClass('eas-pow-waiting');
+                plugin.submitForm();
+            }
         },
         resetPow: function () {
             var plugin = this;
@@ -242,6 +288,7 @@
             }
             plugin.pow.ready = false;
             plugin.pow.loading = false;
+            plugin.pow.bypass = false;
             plugin.$powChallenge.val('');
             plugin.$powSolution.val('');
             if (plugin.movedOrPressed) {

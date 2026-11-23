@@ -1194,3 +1194,7 @@ msgstr "Die Nachricht wurde freigegeben und gesendet."
 #, php-format
 msgid "The submission could not be released: %s"
 msgstr "Die Nachricht konnte nicht freigegeben werden: %s"
+
+#: admin/partials/exopite-anti-spam-admin-statistics.php:88
+msgid "Total"
+msgstr "Gesamt"

@@ -51,13 +51,6 @@ foreach ( $eas_periods as $eas_days => $eas_title ) {
 		}
 	}
 
-	echo '<p class="eas-stats-totals">';
-	echo '<strong>' . esc_html__( 'Sent', 'exopite-anti-spam' ) . ':</strong> ' . esc_html( number_format_i18n( $eas_totals['sent'] ) ) . ' &nbsp; ';
-	echo '<strong>' . esc_html__( 'Spam', 'exopite-anti-spam' ) . ':</strong> ' . esc_html( number_format_i18n( $eas_totals['spam'] ) ) . ' &nbsp; ';
-	echo '<strong>' . esc_html__( 'Validation errors', 'exopite-anti-spam' ) . ':</strong> ' . esc_html( number_format_i18n( $eas_totals['invalid'] ) ) . ' &nbsp; ';
-	echo '<strong>' . esc_html__( 'Released from quarantine', 'exopite-anti-spam' ) . ':</strong> ' . esc_html( number_format_i18n( $eas_totals['released'] ) );
-	echo '</p>';
-
 	echo '<table class="widefat striped eas-stats-table"><thead><tr>';
 	echo '<th scope="col">' . esc_html__( 'Form', 'exopite-anti-spam' ) . '</th>';
 	echo '<th scope="col">' . esc_html__( 'Reason', 'exopite-anti-spam' ) . '</th>';
@@ -79,5 +72,25 @@ foreach ( $eas_periods as $eas_days => $eas_title ) {
 		echo '</tr>';
 	}
 
-	echo '</tbody></table>';
+	echo '</tbody><tfoot>';
+
+	// Totals rows (all forms).
+	$eas_total_labels = array(
+		'sent'     => __( 'Sent', 'exopite-anti-spam' ),
+		'spam'     => __( 'Spam', 'exopite-anti-spam' ),
+		'invalid'  => __( 'Validation errors', 'exopite-anti-spam' ),
+		'released' => __( 'Released from quarantine', 'exopite-anti-spam' ),
+	);
+	$eas_first_total  = true;
+
+	foreach ( $eas_total_labels as $eas_key => $eas_label ) {
+		echo '<tr>';
+		echo '<th scope="row">' . ( $eas_first_total ? esc_html__( 'Total', 'exopite-anti-spam' ) : '' ) . '</th>';
+		echo '<th scope="row">' . esc_html( $eas_label ) . '</th>';
+		echo '<th>' . esc_html( number_format_i18n( $eas_totals[ $eas_key ] ) ) . '</th>';
+		echo '</tr>';
+		$eas_first_total = false;
+	}
+
+	echo '</tfoot></table>';
 }

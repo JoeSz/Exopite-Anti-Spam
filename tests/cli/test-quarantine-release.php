@@ -29,7 +29,7 @@ $stat       = function ( $reason ) use ( $wpdb, $form_id ) {
 $_SERVER['HTTP_REFERER'] = home_url( '/kontakt/?from=test' );
 $_SERVER['REQUEST_URI']  = '/kontakt/?from=test';
 $_SERVER['REMOTE_ADDR']  = '198.51.100.7';
-eas_submit( $form_id, $spam );
+eas_submit( $form_id, array_merge( $spam, array( '_wpcf7cf_hidden_groups' => '["group-a"]' ) ) );
 $_SERVER['REMOTE_ADDR']  = '203.0.113.5';
 $_SERVER['REQUEST_URI']  = '/eas-cli-test/';
 unset( $_SERVER['HTTP_REFERER'] );
@@ -46,6 +46,8 @@ add_action(
 	function () use ( &$seen ) {
 		$submission = WPCF7_Submission::get_instance();
 		$seen       = array(
+			'user' => get_current_user_id(),
+			'cf'   => isset( $_POST['_wpcf7cf_hidden_groups'] ) ? wp_unslash( $_POST['_wpcf7cf_hidden_groups'] ) : '',
 			'name' => isset( $_POST['your-name'] ) ? wp_unslash( $_POST['your-name'] ) : '',
 			'ip'   => $submission->get_meta( 'remote_ip' ),
 			'url'  => $submission->get_meta( 'url' ),
@@ -56,7 +58,10 @@ add_action(
 
 $sent_before = $stat( 'sent' );
 eas_reset_request_state();
+wp_set_current_user( 14 ); // The admin who releases.
 $result = $quarantine->release( $id );
+eas_assert( 0 === $seen['user'] && '["group-a"]' === $seen['cf'] && 14 === get_current_user_id(), 'release as the visitor (not the admin), with the Conditional Fields data; admin restored' );
+wp_set_current_user( 0 );
 eas_assert( $id && $result['ok'] && 'mail_sent' === $result['status'] && null === $quarantine->get_entry( $id ), 'released and deleted (' . $result['status'] . ')' );
 eas_assert( isset( $seen['name'] ) && 'Peter Muster' === $seen['name'] && '198.51.100.7' === $seen['ip'] && false !== strpos( $seen['url'], '/kontakt/?from=test' ), 'release sees the original data, IP and URL' );
 eas_assert( 1 === $stat( 'released' ) && 1 === $stat( 'released:honeypot' ) && $sent_before === $stat( 'sent' ), 'statistics: released counted, sent not' );

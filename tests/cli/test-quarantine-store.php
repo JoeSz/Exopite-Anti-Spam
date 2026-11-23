@@ -38,6 +38,14 @@ eas_set_meta( $form_id, array( 'quarantine' => 'yes' ) );
 eas_submit( $form_id, $valid );
 eas_assert( 1 === $rows(), 'sure bot signal (timestamp missing): not stored' );
 
+// A bot with hundreds of fields: not stored (only counted in the statistics).
+$junk = array();
+for ( $i = 0; $i < 250; $i++ ) {
+	$junk[ 'junk' . $i ] = str_repeat( 'x', 100 );
+}
+eas_submit( $form_id, array_merge( $valid, $junk, array( 'eastimestamp' => eas_timestamp(), $honeypot => 'https://spam.test' ) ) );
+eas_assert( 1 === $rows(), 'more than 200 fields: not stored' );
+
 // Maximum: only rows of this form exist on the test site, keep the others anyway (count all rows).
 $options = get_option( 'exopite-anti-spam' );
 update_option( 'exopite-anti-spam', array_merge( (array) $options, array( 'quarantine_max' => 100 ) ) );

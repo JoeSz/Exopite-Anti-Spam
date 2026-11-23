@@ -34,6 +34,13 @@ class Exopite_Anti_Spam_Public_Email_Check {
 	private $domains = null;
 
 	/**
+	 * E-mail fields for the DNS check of the current submission: array( WPCF7_FormTag, domain ).
+	 *
+	 * @var array[]
+	 */
+	private $pending_mx = array();
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Exopite_Anti_Spam $plugin_main Plugin main class.
@@ -98,9 +105,41 @@ class Exopite_Anti_Spam_Public_Email_Check {
 			return $result;
 		}
 
-		if ( $settings['mx'] && ! $this->domain_exists( $domain ) ) {
+		// The DNS check runs later (validate_mx()), after the bot checks: bots must not cause DNS requests.
+		if ( $settings['mx'] ) {
+			$this->pending_mx[] = array( $tag, $domain );
+		}
 
-			$message = ! empty( $options['display_error_message_mx'] ) ? (string) $options['display_error_message_mx'] : __( 'The domain of this e-mail address does not exist.', 'exopite-anti-spam' );
+		return $result;
+	}
+
+	/**
+	 * DNS check of the e-mail domains collected by validate(), after the rate limit, timestamp, tokens and
+	 * proof-of-work (Hook: wpcf7_validate, priority 40). Not for bot submissions and blocked visitors.
+	 *
+	 * @param WPCF7_Validation $result Validation result.
+	 * @param WPCF7_FormTag[]  $tags   Form tags.
+	 * @return WPCF7_Validation
+	 */
+	public function validate_mx( $result, $tags ) {
+
+		$pending          = $this->pending_mx;
+		$this->pending_mx = array();
+
+		if ( ! $pending || $this->main->public->skip_checks() || ! empty( $this->main->validate->spam_reasons ) || ! empty( $this->main->ratelimiter->blocked ) ) {
+			return $result;
+		}
+
+		$options = get_option( $this->main->get_plugin_name() );
+		$message = ! empty( $options['display_error_message_mx'] ) ? (string) $options['display_error_message_mx'] : __( 'The domain of this e-mail address does not exist.', 'exopite-anti-spam' );
+
+		foreach ( $pending as $item ) {
+
+			list( $tag, $domain ) = $item;
+
+			if ( ! $result->is_valid( $tag->name ) || $this->domain_exists( $domain ) ) {
+				continue;
+			}
 
 			$this->main->validate->invalidate_log( 'e-mail domain without MX/A record: ' . $domain, false, 'email_domain' );
 			$result->invalidate( $tag, $message );
@@ -108,6 +147,14 @@ class Exopite_Anti_Spam_Public_Email_Check {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Forget the e-mail domains of the last submission.
+	 */
+	public function reset() {
+
+		$this->pending_mx = array();
 	}
 
 	/**
@@ -171,7 +218,7 @@ class Exopite_Anti_Spam_Public_Email_Check {
 
 	/**
 	 * Does the domain have an MX record, or (RFC 5321 fallback) an A or AAAA record?
-	 * DNS errors: true (fail open), not cached. Results are cached for a day.
+	 * DNS errors: true (fail open), cached for 5 minutes. Results are cached for a day.
 	 *
 	 * @param string $domain Domain.
 	 * @return bool
@@ -198,8 +245,9 @@ class Exopite_Anti_Spam_Public_Email_Check {
 		$key    = 'eas_mx_' . md5( $domain );
 		$cached = get_transient( $key );
 
-		if ( '1' === $cached || '0' === $cached ) {
-			return '1' === $cached;
+		// '2': DNS error a few minutes ago, accepted without asking again (a nameserver without answer would block every request).
+		if ( '1' === $cached || '0' === $cached || '2' === $cached ) {
+			return '0' !== $cached;
 		}
 
 		foreach ( array( DNS_MX, DNS_A, DNS_AAAA ) as $type ) {
@@ -208,6 +256,7 @@ class Exopite_Anti_Spam_Public_Email_Check {
 
 			// DNS error (no answer, no DNS on the server): accept the address.
 			if ( false === $records ) {
+				set_transient( $key, '2', 5 * MINUTE_IN_SECONDS );
 				return true;
 			}
 
