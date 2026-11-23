@@ -124,6 +124,13 @@ class Exopite_Anti_Spam {
     public $quarantine;
 
     /**
+     * Spam score (content rules).
+     *
+     * @var Exopite_Anti_Spam_Public_Scoring
+     */
+    public $scoring;
+
+    /**
      * Store plugin admin class to allow public access.
      *
      * @since    20180622
@@ -180,6 +187,7 @@ class Exopite_Anti_Spam {
         $this->page_cache = new Exopite_Anti_Spam_Page_Cache( $this->plugin_name, $this->main );
         $this->stats = new Exopite_Anti_Spam_Stats( $this->main );
         $this->quarantine = new Exopite_Anti_Spam_Quarantine( $this->main );
+        $this->scoring = new Exopite_Anti_Spam_Public_Scoring( $this->main );
 
         $this->set_locale();
         $this->define_admin_hooks();
@@ -246,6 +254,8 @@ class Exopite_Anti_Spam {
 
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-stats.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-quarantine.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-scorer.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-exopite-anti-spam-public-scoring.php';
 
         // Global class name without prefix: other plugins may contain the same class.
         if ( ! class_exists( 'RemoteAddress' ) ) {
@@ -479,6 +489,9 @@ class Exopite_Anti_Spam {
 
         // Bot submissions (honeypot, missing or manipulated encrypted data): status "spam" like Akismet, reCAPTCHA, Turnstile
         $this->loader->add_filter( 'wpcf7_spam', $this->validate, 'wpcf7_spam', 10, 2 );
+
+        // Spam score: content rules, only if all other checks passed
+        $this->loader->add_filter( 'wpcf7_spam', $this->scoring, 'wpcf7_spam', 20, 2 );
 
         // Rate limit: block visitors after too many failed attempts
         $this->loader->add_filter( 'wpcf7_validate', $this->ratelimiter, 'wpcf7_validate', 5, 2 );

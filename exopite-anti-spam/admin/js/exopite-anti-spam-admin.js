@@ -33,6 +33,21 @@
             $('.eas-ratelimit-values').show();
         }
 
+        // Values of the spam score, only while it is active
+        $('#eas-activate-scoring').on('click', function(){
+
+            if ($(this).is(':checked')) {
+                $('.eas-scoring-values').slideDown();
+            } else {
+                $('.eas-scoring-values').slideUp();
+            }
+
+        });
+
+        if ($('#eas-activate-scoring').is(':checked')) {
+            $('.eas-scoring-values').show();
+        }
+
         // Quarantine actions (release, delete, delete all): ask first
         $(document).on('submit', 'form[data-eas-confirm]', function (e) {
             var question = $(this).data('eas-confirm');

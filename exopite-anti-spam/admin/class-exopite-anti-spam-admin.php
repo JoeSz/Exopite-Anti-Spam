@@ -347,6 +347,41 @@ class Exopite_Anti_Spam_Admin {
             $checked
         );
 
+        // Spam score
+        $form_options = isset( $options[0] ) ? $options[0] : false;
+        $checked = $this->main->scoring->is_active( $form_options );
+        $threshold = $this->main->scoring->get_threshold( $form_options );
+        $allowed_scripts = $this->main->scoring->get_extra_scripts( $form_options );
+        $script_labels = array(
+            'cyrillic' => __( 'Cyrillic', 'exopite-anti-spam' ),
+            'han'      => __( 'Chinese', 'exopite-anti-spam' ),
+            'japanese' => __( 'Japanese', 'exopite-anti-spam' ),
+            'hangul'   => __( 'Korean', 'exopite-anti-spam' ),
+            'arabic'   => __( 'Arabic', 'exopite-anti-spam' ),
+            'hebrew'   => __( 'Hebrew', 'exopite-anti-spam' ),
+            'greek'    => __( 'Greek', 'exopite-anti-spam' ),
+            'thai'     => __( 'Thai', 'exopite-anti-spam' ),
+        );
+
+        $extra  = '<div class="eas-row eas-scoring-values" style="display:none;">';
+        $extra .= '<div><label for="eas-scoring-threshold">' . esc_html__( 'Spam from (points):', 'exopite-anti-spam' ) . '</label> <input id="eas-scoring-threshold" type="number" name="eas-scoring-threshold" value="' . esc_attr( $threshold ) . '" min="1" max="100"></div>';
+        $extra .= '<div>' . esc_html__( 'Allowed scripts in addition to Latin and the script of the form language:', 'exopite-anti-spam' ) . '<br>';
+
+        foreach ( $script_labels as $script => $label ) {
+            $extra .= '<label class="eas-scoring-script"><input type="checkbox" name="eas-scoring-scripts[]" value="' . esc_attr( $script ) . '"' . checked( in_array( $script, $allowed_scripts, true ), true, false ) . '> ' . esc_html( $label ) . '</label> ';
+        }
+
+        $extra .= '</div></div>';
+
+        $this->panel_switch_row(
+            'eas-activate-scoring',
+            __( 'Spam score', 'exopite-anti-spam' ),
+            esc_html__( 'Checks the content of the text fields after all other checks passed. Every rule gives points, the submission is spam if the sum reaches the limit (default 10), a single weak signal is never enough: Latin word with Cyrillic look-alike letters (e.g. "vіagra") 10, BBCode or HTML link 5, link or e-mail address in a name field 5, most letters in a script other than Latin and the language of the form 5, message with a link and almost no text 4, the same text in two fields 3, name which looks like random letters 2 per field, every link after the second 2. The visitor gets the spam message, the submission goes to the quarantine if it is activated.', 'exopite-anti-spam' ),
+            __( 'Activate spam score', 'exopite-anti-spam' ),
+            $checked,
+            $extra
+        );
+
     }
 
     public function wpcf7_editor_panels( $panels ) {
@@ -448,6 +483,9 @@ class Exopite_Anti_Spam_Admin {
             'acceptance_ajaxcheck'  => $acceptance_ajaxcheck,
             'ratelimit'             => $ratelimit,
             'quarantine'            => isset( $_POST['eas-activate-quarantine'] ) ? 'yes' : 'no',
+            'scoring'               => isset( $_POST['eas-activate-scoring'] ) ? 'yes' : 'no',
+            'scoring_threshold'     => $this->main->scoring->get_threshold( array( 'scoring_threshold' => isset( $_POST['eas-scoring-threshold'] ) ? intval( $_POST['eas-scoring-threshold'] ) : 0 ) ),
+            'scoring_scripts'       => $this->main->scoring->get_extra_scripts( array( 'scoring_scripts' => isset( $_POST['eas-scoring-scripts'] ) ? array_map( 'sanitize_key', (array) wp_unslash( $_POST['eas-scoring-scripts'] ) ) : array() ) ),
         );
 
         update_post_meta( $post_id, 'exopite-anti-spam', $anti_spam_options );
