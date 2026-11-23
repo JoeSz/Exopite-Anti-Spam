@@ -642,6 +642,36 @@ class Exopite_Anti_Spam_Admin {
 
     }
 
+    /**
+     * Update the list of disposable e-mail domains or use the list of the plugin again ("Blacklist" page).
+     * Hook: admin_post_eas_disposable_list.
+     */
+    public function handle_disposable_list() {
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Sorry, you are not allowed to do this.', 'exopite-anti-spam' ), '', array( 'response' => 403 ) );
+        }
+
+        $action = isset( $_POST['do'] ) && 'reset' === $_POST['do'] ? 'reset' : 'update';
+
+        check_admin_referer( 'eas_disposable_list_' . $action );
+
+        if ( 'reset' === $action ) {
+            $this->main->email_check->reset_list();
+            $notice = array(
+                'ok'      => true,
+                'message' => __( 'The list of the plugin is used again.', 'exopite-anti-spam' ),
+            );
+        } else {
+            $notice = $this->main->email_check->update_list();
+        }
+
+        set_transient( 'eas_disposable_notice_' . get_current_user_id(), $notice, MINUTE_IN_SECONDS );
+
+        wp_safe_redirect( add_query_arg( 'page', $this->plugin_name, admin_url( 'admin.php' ) ) . '#eas-disposable-list' );
+        exit;
+    }
+
     public function options_update() {
 
         if ( current_user_can( 'manage_options' ) ) {

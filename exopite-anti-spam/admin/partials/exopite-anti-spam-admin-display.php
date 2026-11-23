@@ -118,6 +118,47 @@ $log_dir = Exopite_Anti_Spam_Logger::get_dir( $this->main->public->is_logging() 
     <?php submit_button( __( 'Save changes', 'exopite-anti-spam' ), 'primary','submit', TRUE ); ?>
     </form>
 
+    <?php
+    // Disposable e-mail domains: the list in use, update and reset (own forms, outside the settings form).
+    $disposable_info = $this->main->email_check->get_list_info();
+    $disposable_notice = get_transient( 'eas_disposable_notice_' . get_current_user_id() );
+    if ( is_array( $disposable_notice ) ) {
+        delete_transient( 'eas_disposable_notice_' . get_current_user_id() );
+    }
+    ?>
+    <div class="row" id="eas-disposable-list">
+        <h3><?php esc_html_e( 'List of disposable e-mail domains', 'exopite-anti-spam' ); ?></h3>
+        <?php if ( is_array( $disposable_notice ) && ! empty( $disposable_notice['message'] ) ) : ?>
+            <div class="notice <?php echo $disposable_notice['ok'] ? 'notice-success' : 'notice-error'; ?> inline"><p><?php echo esc_html( $disposable_notice['message'] ); ?></p></div>
+        <?php endif; ?>
+        <p>
+            <?php
+            if ( 'updated' === $disposable_info['source'] ) {
+                /* translators: 1: number of domains, 2: date */
+                echo esc_html( sprintf( __( 'In use: updated list, %1$s domains, downloaded on %2$s.', 'exopite-anti-spam' ), number_format_i18n( $disposable_info['count'] ), wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $disposable_info['updated'] ) ) );
+            } else {
+                /* translators: %s: number of domains */
+                echo esc_html( sprintf( __( 'In use: list of the plugin, %s domains.', 'exopite-anti-spam' ), number_format_i18n( $disposable_info['count'] ) ) );
+            }
+            ?>
+        </p>
+        <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="eas-quarantine-action">
+            <input type="hidden" name="action" value="eas_disposable_list">
+            <input type="hidden" name="do" value="update">
+            <?php wp_nonce_field( 'eas_disposable_list_update' ); ?>
+            <button type="submit" class="button"><?php esc_html_e( 'Update list now', 'exopite-anti-spam' ); ?></button>
+        </form>
+        <?php if ( 'updated' === $disposable_info['source'] ) : ?>
+            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="eas-quarantine-action">
+                <input type="hidden" name="action" value="eas_disposable_list">
+                <input type="hidden" name="do" value="reset">
+                <?php wp_nonce_field( 'eas_disposable_list_reset' ); ?>
+                <button type="submit" class="button"><?php esc_html_e( 'Reset to the list of the plugin', 'exopite-anti-spam' ); ?></button>
+            </form>
+        <?php endif; ?>
+        <p class="eas-field-instructions"><?php esc_html_e( 'Used by "Reject disposable e-mail addresses" in the forms. The list grows every week; "Update list now" downloads the current list (disposable-email-domains on GitHub, license CC0) once. Only the server connects to GitHub, no data of visitors is sent; nothing is updated automatically. The downloaded list is saved only if it contains only domains, otherwise the list in use is kept. Plugin updates contain a current list too.', 'exopite-anti-spam' ); ?></p>
+    </div>
+
     <div class="row">
         <h3><?php esc_html_e( 'Logging', 'exopite-anti-spam' ); ?></h3>
         <?php if ( $this->main->public->is_logging() ) : ?>

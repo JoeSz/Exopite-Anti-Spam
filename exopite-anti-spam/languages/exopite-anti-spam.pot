@@ -1187,3 +1187,47 @@ msgstr ""
 #: admin/partials/exopite-anti-spam-admin-statistics.php:88
 msgid "Total"
 msgstr ""
+
+#: admin/class-exopite-anti-spam-admin.php:663
+msgid "The list of the plugin is used again."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php:130
+msgid "List of disposable e-mail domains"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php:138
+#, php-format
+msgid "In use: updated list, %1$s domains, downloaded on %2$s."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php:141
+#, php-format
+msgid "In use: list of the plugin, %s domains."
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php:149
+msgid "Update list now"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php:156
+msgid "Reset to the list of the plugin"
+msgstr ""
+
+#: admin/partials/exopite-anti-spam-admin-display.php:159
+msgid "Used by \"Reject disposable e-mail addresses\" in the forms. The list grows every week; \"Update list now\" downloads the current list (disposable-email-domains on GitHub, license CC0) once. Only the server connects to GitHub, no data of visitors is sent; nothing is updated automatically. The downloaded list is saved only if it contains only domains, otherwise the list in use is kept. Plugin updates contain a current list too."
+msgstr ""
+
+#: public/class-exopite-anti-spam-public-email-check.php:323
+#, php-format
+msgid "The list could not be downloaded (%s). The list in use is kept."
+msgstr ""
+
+#: public/class-exopite-anti-spam-public-email-check.php:333
+msgid "The downloaded file does not look like a list of domains. The list in use is kept."
+msgstr ""
+
+#: public/class-exopite-anti-spam-public-email-check.php:353
+#, php-format
+msgid "The list was updated: %s domains."
+msgstr ""

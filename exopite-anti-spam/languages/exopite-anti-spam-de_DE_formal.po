@@ -1198,3 +1198,47 @@ msgstr "Die Nachricht konnte nicht freigegeben werden: %s"
 #: admin/partials/exopite-anti-spam-admin-statistics.php:88
 msgid "Total"
 msgstr "Gesamt"
+
+#: admin/class-exopite-anti-spam-admin.php:663
+msgid "The list of the plugin is used again."
+msgstr "Die Liste des Plugins wird wieder verwendet."
+
+#: admin/partials/exopite-anti-spam-admin-display.php:130
+msgid "List of disposable e-mail domains"
+msgstr "Liste der Wegwerf-E-Mail-Domains"
+
+#: admin/partials/exopite-anti-spam-admin-display.php:138
+#, php-format
+msgid "In use: updated list, %1$s domains, downloaded on %2$s."
+msgstr "Verwendet: aktualisierte Liste, %1$s Domains, heruntergeladen am %2$s."
+
+#: admin/partials/exopite-anti-spam-admin-display.php:141
+#, php-format
+msgid "In use: list of the plugin, %s domains."
+msgstr "Verwendet: Liste des Plugins, %s Domains."
+
+#: admin/partials/exopite-anti-spam-admin-display.php:149
+msgid "Update list now"
+msgstr "Liste jetzt aktualisieren"
+
+#: admin/partials/exopite-anti-spam-admin-display.php:156
+msgid "Reset to the list of the plugin"
+msgstr "Auf die Liste des Plugins zurücksetzen"
+
+#: admin/partials/exopite-anti-spam-admin-display.php:159
+msgid "Used by \"Reject disposable e-mail addresses\" in the forms. The list grows every week; \"Update list now\" downloads the current list (disposable-email-domains on GitHub, license CC0) once. Only the server connects to GitHub, no data of visitors is sent; nothing is updated automatically. The downloaded list is saved only if it contains only domains, otherwise the list in use is kept. Plugin updates contain a current list too."
+msgstr "Wird von „Wegwerf-E-Mail-Adressen ablehnen“ in den Formularen verwendet. Die Liste wächst jede Woche; „Liste jetzt aktualisieren“ lädt die aktuelle Liste (disposable-email-domains auf GitHub, Lizenz CC0) einmalig herunter. Nur der Server verbindet sich mit GitHub, es werden keine Daten von Besuchern gesendet; nichts wird automatisch aktualisiert. Die heruntergeladene Liste wird nur gespeichert, wenn sie ausschließlich Domains enthält, sonst bleibt die verwendete Liste erhalten. Plugin-Updates enthalten ebenfalls eine aktuelle Liste."
+
+#: public/class-exopite-anti-spam-public-email-check.php:323
+#, php-format
+msgid "The list could not be downloaded (%s). The list in use is kept."
+msgstr "Die Liste konnte nicht heruntergeladen werden (%s). Die verwendete Liste bleibt erhalten."
+
+#: public/class-exopite-anti-spam-public-email-check.php:333
+msgid "The downloaded file does not look like a list of domains. The list in use is kept."
+msgstr "Die heruntergeladene Datei sieht nicht wie eine Liste von Domains aus. Die verwendete Liste bleibt erhalten."
+
+#: public/class-exopite-anti-spam-public-email-check.php:353
+#, php-format
+msgid "The list was updated: %s domains."
+msgstr "Die Liste wurde aktualisiert: %s Domains."

@@ -49,6 +49,7 @@ function exopite_anti_spam_uninstall_site() {
 	delete_option( 'exopite_anti_spam_db_version' );
 	delete_option( 'exopite_anti_spam_page_cache' );
 	delete_option( 'exopite_anti_spam_page_cache_notice' );
+	delete_option( 'exopite_anti_spam_disposable_domains' );
 	Exopite_Anti_Spam_Logger::delete_all();
 
 	if ( defined( 'EXOPITE_ANTI_SPAM_UNINSTALL_DELETE_ALL' ) && EXOPITE_ANTI_SPAM_UNINSTALL_DELETE_ALL ) {

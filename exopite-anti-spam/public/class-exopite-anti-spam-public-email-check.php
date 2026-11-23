@@ -20,6 +20,22 @@
 class Exopite_Anti_Spam_Public_Email_Check {
 
 	/**
+	 * Source of the list update (CC0, https://github.com/disposable-email-domains/disposable-email-domains).
+	 */
+	const LIST_URL = 'https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/main/disposable_email_blocklist.conf';
+
+	/**
+	 * Option with the updated list (not autoloaded).
+	 */
+	const LIST_OPTION = 'exopite_anti_spam_disposable_domains';
+
+	/**
+	 * Checks of a downloaded list.
+	 */
+	const MIN_LIST_DOMAINS = 1000;
+	const MAX_LIST_BYTES   = 2097152;
+
+	/**
 	 * Plugin main class.
 	 *
 	 * @var Exopite_Anti_Spam
@@ -182,7 +198,8 @@ class Exopite_Anti_Spam_Public_Email_Check {
 	}
 
 	/**
-	 * Disposable domains (lists/disposable-domains.txt, one per line, "#" comments), as array keys.
+	 * Disposable domains as array keys: the list updated on the "Blacklist" page (option LIST_OPTION), otherwise the
+	 * list of the plugin (lists/disposable-domains.txt, one per line, "#" comments).
 	 *
 	 * @return array
 	 */
@@ -192,16 +209,12 @@ class Exopite_Anti_Spam_Public_Email_Check {
 			return $this->domains;
 		}
 
-		$list = array();
-		$file = EXOPITE_ANTI_SPAM_PATH . 'lists/disposable-domains.txt';
+		$updated = get_option( self::LIST_OPTION );
 
-		if ( is_readable( $file ) ) {
-			foreach ( (array) file( $file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES ) as $line ) {
-				$line = strtolower( trim( $line ) );
-				if ( '' !== $line && '#' !== $line[0] ) {
-					$list[] = $line;
-				}
-			}
+		if ( is_array( $updated ) && ! empty( $updated['domains'] ) && is_string( $updated['domains'] ) ) {
+			$list = explode( "\n", $updated['domains'] );
+		} else {
+			$list = $this->parse_list( is_readable( self::bundled_file() ) ? (string) file_get_contents( self::bundled_file() ) : '' );
 		}
 
 		/**
@@ -214,6 +227,140 @@ class Exopite_Anti_Spam_Public_Email_Check {
 		$this->domains = array_flip( array_map( 'strtolower', array_filter( $list, 'is_string' ) ) );
 
 		return $this->domains;
+	}
+
+	/**
+	 * The list shipped with the plugin.
+	 *
+	 * @return string
+	 */
+	public static function bundled_file() {
+
+		return EXOPITE_ANTI_SPAM_PATH . 'lists/disposable-domains.txt';
+	}
+
+	/**
+	 * Domains of a list (one per line, "#" comments, empty lines).
+	 *
+	 * @param string $text List.
+	 * @param bool   $strict Return false if a line is not a domain (downloaded lists).
+	 * @return string[]|false
+	 */
+	public function parse_list( $text, $strict = false ) {
+
+		$list = array();
+
+		foreach ( preg_split( '/\r\n|\r|\n/', (string) $text ) as $line ) {
+
+			$line = strtolower( trim( $line ) );
+
+			if ( '' === $line || '#' === $line[0] ) {
+				continue;
+			}
+
+			if ( $strict && ! preg_match( '/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/', $line ) ) {
+				return false;
+			}
+
+			$list[] = $line;
+		}
+
+		return array_values( array_unique( $list ) );
+	}
+
+	/**
+	 * Source, date and size of the list in use.
+	 *
+	 * @return array array( 'source' => 'updated'|'bundled', 'updated' => int timestamp (0: bundled), 'count' => int )
+	 */
+	public function get_list_info() {
+
+		$updated = get_option( self::LIST_OPTION );
+
+		if ( is_array( $updated ) && ! empty( $updated['domains'] ) ) {
+			return array(
+				'source'  => 'updated',
+				'updated' => isset( $updated['updated'] ) ? (int) $updated['updated'] : 0,
+				'count'   => isset( $updated['count'] ) ? (int) $updated['count'] : 0,
+			);
+		}
+
+		return array(
+			'source'  => 'bundled',
+			'updated' => 0,
+			'count'   => count( $this->parse_list( is_readable( self::bundled_file() ) ? (string) file_get_contents( self::bundled_file() ) : '' ) ),
+		);
+	}
+
+	/**
+	 * Download the current list (button on the "Blacklist" page, never automatically). Saved only if every line is a
+	 * domain, there are at least MIN_LIST_DOMAINS domains and the file is not larger than MAX_LIST_BYTES; otherwise the
+	 * list in use is kept. Only the server connects to the list URL, no visitor data is sent.
+	 *
+	 * @return array array( 'ok' => bool, 'message' => string )
+	 */
+	public function update_list() {
+
+		/**
+		 * URL of the disposable e-mail domain list (one domain per line).
+		 *
+		 * @param string $url URL.
+		 */
+		$url      = (string) apply_filters( 'exopite_anti_spam_disposable_list_url', self::LIST_URL );
+		$response = wp_remote_get(
+			$url,
+			array(
+				'timeout'             => 20,
+				'limit_response_size' => self::MAX_LIST_BYTES + 1,
+			)
+		);
+
+		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+			$error = is_wp_error( $response ) ? $response->get_error_message() : 'HTTP ' . wp_remote_retrieve_response_code( $response );
+			return array(
+				'ok'      => false,
+				/* translators: %s: error message */
+				'message' => sprintf( __( 'The list could not be downloaded (%s). The list in use is kept.', 'exopite-anti-spam' ), $error ),
+			);
+		}
+
+		$body = (string) wp_remote_retrieve_body( $response );
+		$list = strlen( $body ) > self::MAX_LIST_BYTES ? false : $this->parse_list( $body, true );
+
+		if ( false === $list || count( $list ) < self::MIN_LIST_DOMAINS ) {
+			return array(
+				'ok'      => false,
+				'message' => __( 'The downloaded file does not look like a list of domains. The list in use is kept.', 'exopite-anti-spam' ),
+			);
+		}
+
+		update_option(
+			self::LIST_OPTION,
+			array(
+				'domains' => implode( "\n", $list ),
+				'updated' => time(),
+				'count'   => count( $list ),
+				'url'     => $url,
+			),
+			false
+		);
+
+		$this->domains = null;
+
+		return array(
+			'ok'      => true,
+			/* translators: %s: number of domains */
+			'message' => sprintf( __( 'The list was updated: %s domains.', 'exopite-anti-spam' ), number_format_i18n( count( $list ) ) ),
+		);
+	}
+
+	/**
+	 * Use the list of the plugin again.
+	 */
+	public function reset_list() {
+
+		delete_option( self::LIST_OPTION );
+		$this->domains = null;
 	}
 
 	/**
