@@ -26,8 +26,9 @@ class Exopite_Anti_Spam_Activator {
 	 * Increase on every change of the token table schema.
 	 * 2: type 'captcha' (single use image captcha tokens), index on token.
 	 * 3: BIGINT user and form IDs (SMALLINT was max. 32767), index for the clean up.
+	 * 4: tables for the statistics and the quarantine.
 	 */
-	const DB_VERSION = '3';
+	const DB_VERSION = '4';
 
 	/**
 	 * Short Description. (use period)
@@ -54,6 +55,31 @@ class Exopite_Anti_Spam_Activator {
             PRIMARY KEY  (id),
             KEY token (token),
             KEY type_timestamp (type,timestamp)
+        ) $charset_collate;";
+
+        // Statistics: one row per day, form and reason (no personal data), see Exopite_Anti_Spam_Stats.
+        $sql[] = "CREATE TABLE " . $wpdb->prefix . "eas_cf7_stats (
+            stat_date DATE NOT NULL,
+            form_id BIGINT UNSIGNED NOT NULL,
+            reason VARCHAR(40) NOT NULL,
+            count INT UNSIGNED NOT NULL DEFAULT 0,
+            PRIMARY KEY  (stat_date,form_id,reason)
+        ) $charset_collate;";
+
+        // Quarantine: spam submissions of forms with quarantine enabled, see Exopite_Anti_Spam_Quarantine.
+        $sql[] = "CREATE TABLE " . $wpdb->prefix . "eas_cf7_quarantine (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            created DATETIME NOT NULL,
+            form_id BIGINT UNSIGNED NOT NULL,
+            reasons TEXT NOT NULL,
+            score INT NOT NULL DEFAULT 0,
+            posted_data LONGTEXT NOT NULL,
+            meta TEXT NOT NULL,
+            has_files TINYINT(1) NOT NULL DEFAULT 0,
+            release_error TEXT NULL,
+            PRIMARY KEY  (id),
+            KEY created (created),
+            KEY form_id (form_id)
         ) $charset_collate;";
 
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );

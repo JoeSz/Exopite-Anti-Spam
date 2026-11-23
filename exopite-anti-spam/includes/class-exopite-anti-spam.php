@@ -110,6 +110,13 @@ class Exopite_Anti_Spam {
     public $ratelimiter;
 
     /**
+     * Statistics of the submissions.
+     *
+     * @var Exopite_Anti_Spam_Stats
+     */
+    public $stats;
+
+    /**
      * Store plugin admin class to allow public access.
      *
      * @since    20180622
@@ -157,6 +164,7 @@ class Exopite_Anti_Spam {
         $this->crypter = new Exopite_Anti_Spam_Crypter( $this->plugin_name );
         $this->tokens = new Exopite_Anti_Spam_Token( $this->main );
         $this->page_cache = new Exopite_Anti_Spam_Page_Cache( $this->plugin_name, $this->main );
+        $this->stats = new Exopite_Anti_Spam_Stats( $this->main );
 
         $this->set_locale();
         $this->define_admin_hooks();
@@ -219,6 +227,8 @@ class Exopite_Anti_Spam {
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-token.php';
 
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-page-cache.php';
+
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-exopite-anti-spam-stats.php';
 
         // Global class name without prefix: other plugins may contain the same class.
         if ( ! class_exists( 'RemoteAddress' ) ) {
@@ -461,6 +471,9 @@ class Exopite_Anti_Spam {
 
         // DEBUG
         $this->loader->add_action( 'wpcf7_submit', $this->public, 'wpcf7_submit', 20, 2 );
+
+        // Statistics: count every submission once, after the rate limit and the quarantine
+        $this->loader->add_action( 'wpcf7_submit', $this->stats, 'wpcf7_submit', 100, 2 );
 
         // AJAX hooks
         $this->loader->add_filter( 'wp_ajax_eap_reload_cf7_fields', $this->fields, 'reload_cf7_fields_ajax' );

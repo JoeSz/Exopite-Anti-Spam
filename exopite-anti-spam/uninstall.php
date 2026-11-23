@@ -33,7 +33,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-exopite-anti-spam-logger.php';
 
 /**
- * Remove the token table and the log files (temporary data only).
+ * Remove the token, statistics and quarantine tables and the log files (temporary data only).
  *
  * The settings (blacklist, encryption key, per form settings) are kept by default,
  * because a manual update (delete and reinstall) would remove them too.
@@ -44,6 +44,8 @@ function exopite_anti_spam_uninstall_site() {
 	global $wpdb;
 
 	$wpdb->query( 'DROP TABLE IF EXISTS `' . $wpdb->prefix . 'eas_cf7_email_tokens`' );
+	$wpdb->query( 'DROP TABLE IF EXISTS `' . $wpdb->prefix . 'eas_cf7_stats`' );
+	$wpdb->query( 'DROP TABLE IF EXISTS `' . $wpdb->prefix . 'eas_cf7_quarantine`' );
 	delete_option( 'exopite_anti_spam_db_version' );
 	delete_option( 'exopite_anti_spam_page_cache' );
 	delete_option( 'exopite_anti_spam_page_cache_notice' );
