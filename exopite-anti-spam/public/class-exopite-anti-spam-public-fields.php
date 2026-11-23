@@ -89,7 +89,7 @@ class Exopite_Anti_Spam_Public_Fields {
      */
     public function is_timestamp_active() {
 
-        if ( $this->main->public->is_user_logged_in() ) {
+        if ( $this->main->public->skip_checks() ) {
             return false;
         }
 

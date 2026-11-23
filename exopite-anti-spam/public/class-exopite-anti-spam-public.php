@@ -202,12 +202,21 @@ class Exopite_Anti_Spam_Public {
     }
 
     /**
+     * Skip all anti spam checks of the submission: logged in users (see is_user_logged_in())
+     * and the release of a quarantined submission (an admin checked and accepted it).
+     */
+    public function skip_checks() {
+
+        return $this->is_user_logged_in() || ! empty( $this->main->releasing );
+    }
+
+    /**
      * Save used token to database to avoid multiple usage.
      * Also clean out databse by delete all entries older then 31 days.
      */
     public function wpcf7_mail_sent( $contact_form ) {
 
-        if ( $this->is_user_logged_in() ) {
+        if ( $this->skip_checks() ) {
             return;
         }
 

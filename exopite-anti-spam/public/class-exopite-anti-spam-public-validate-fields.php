@@ -58,6 +58,12 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
     public $spam_reasons = array();
 
     /**
+     * Stable reason codes of the current submission (statistics and quarantine), see get_codes().
+     */
+    public $spam_codes = array();
+    public $invalid_codes = array();
+
+    /**
      * The timestamp is expired or already used, the JS should load a new one,
      * so the visitor can submit again without reloading the page (and losing the entered data).
      */
@@ -89,7 +95,8 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
      */
     public function wpcf7_validate( $result, $tags ) {
 
-        if ( $this->main->public->is_user_logged_in() ) {
+        // Also while a quarantined submission is released (the anti spam fields are not part of it).
+        if ( $this->main->public->skip_checks() ) {
             return $result;
         }
 
@@ -97,7 +104,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
         if ( ! $this->main->fields->should_inject_fields() ) {
 
             $route = isset( $GLOBALS['wp']->query_vars['rest_route'] ) ? (string) $GLOBALS['wp']->query_vars['rest_route'] : '';
-            $this->add_spam( 'submission without the anti spam fields ' . $route );
+            $this->add_spam( 'submission without the anti spam fields ' . $route, 'fields_missing' );
 
             return $result;
         }
@@ -112,10 +119,17 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
     /**
      * A bot submission: honeypot filled, encrypted data missing or manipulated.
      * The submission gets the Contact Form 7 status "spam" (see wpcf7_spam()), counts as failed attempt for the rate limit.
+     *
+     * @param string $reason  Text for the logs.
+     * @param string $code    Stable reason code for statistics and quarantine (e.g. 'honeypot').
      */
-    public function add_spam( $reason ) {
+    public function add_spam( $reason, $code = '' ) {
 
         $this->spam_reasons[] = $reason;
+
+        if ( '' !== $code ) {
+            $this->spam_codes[] = $code;
+        }
         $this->main->ratelimiter->failed = true;
 
         if ( $this->main->public->is_logging() ) {
@@ -236,7 +250,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
         if ( empty( $_POST['easacceptance'] ) ) {
 
-            $this->add_spam( 'acceptance token empty' );
+            $this->add_spam( 'acceptance token empty', 'acceptance' );
 
             return $result;
         }
@@ -245,7 +259,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
         if ( ! $token_acceptance ) {
 
-            $this->add_spam( 'acceptance token can not be decrypted' );
+            $this->add_spam( 'acceptance token can not be decrypted', 'acceptance' );
 
             return $result;
         }
@@ -255,14 +269,14 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
         if ( ! is_array( $token_acceptance ) || count( $token_acceptance ) < 3 ) {
 
-            $this->add_spam( 'acceptance token is invalid' );
+            $this->add_spam( 'acceptance token is invalid', 'acceptance' );
 
             return $result;
         }
 
         if ( $token_acceptance[1] != $submit_ip ) {
 
-            $this->invalidate_log( 'acceptance IP mismatch ' . Exopite_Anti_Spam_Logger::anonymize_ip( $submit_ip ) . ' != ' . Exopite_Anti_Spam_Logger::anonymize_ip( $token_acceptance[1] ), false );
+            $this->invalidate_log( 'acceptance IP mismatch ' . Exopite_Anti_Spam_Logger::anonymize_ip( $submit_ip ) . ' != ' . Exopite_Anti_Spam_Logger::anonymize_ip( $token_acceptance[1] ), false, 'token_used' );
             $result->invalidate( $acceptance_tag, esc_attr__( "Validation errors occurred", 'contact-form-7' ) . ' (03)' );
 
             return $result;
@@ -271,7 +285,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
         // The token is requested on checkbox click, the minimum time is checked by "Timestamp".
         if ( ( time() - intval( $token_acceptance[2] ) ) > $this->main->tokens->get_max_age( 'acceptance' ) ) {
 
-            $this->invalidate_log( 'acceptance token expired, created: ' . wp_date( 'Y-m-d H:i:s', intval( $token_acceptance[2] ) ), false );
+            $this->invalidate_log( 'acceptance token expired, created: ' . wp_date( 'Y-m-d H:i:s', intval( $token_acceptance[2] ) ), false, 'expired' );
             $result->invalidate( $acceptance_tag, esc_attr__( 'Your session has timed out. Please submit the form again.', 'exopite-anti-spam' ) );
 
             return $result;
@@ -280,7 +294,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
         // Single use, the JS requests a new token after an unsuccessful submission.
         if ( ! $this->main->tokens->consume( $token_acceptance[0], 'acceptance' ) ) {
 
-            $this->invalidate_log( 'acceptance token already used' );
+            $this->invalidate_log( 'acceptance token already used', true, 'token_used' );
             $result->invalidate( $acceptance_tag, esc_attr__( "Token error.", 'exopite-anti-spam' ) . ' (13)' );
 
             return $result;
@@ -332,7 +346,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
     public function validate_easimagecaptcha( $result, $tag ) {
 
-        if ( $this->main->public->is_user_logged_in() ) {
+        if ( $this->main->public->skip_checks() ) {
             return $result;
         }
 
@@ -343,7 +357,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
         if ( empty( $_POST['exanspsel'] ) ) {
 
             $tag->name = $name;
-            $this->invalidate_log( 'Please make your selection.', false );
+            $this->invalidate_log( 'Please make your selection.', false, 'captcha_wrong' );
             $result->invalidate( $tag, esc_attr__( 'Please make your selection.', 'exopite-anti-spam' ) );
 
             return $result;
@@ -351,7 +365,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
         if ( ! isset( $_POST['exanspsel-auth'] ) || empty( $_POST['exanspsel-auth'] ) ) {
 
-            $this->add_spam( 'captcha auth empty' );
+            $this->add_spam( 'captcha auth empty', 'captcha' );
 
             return $result;
         }
@@ -359,7 +373,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
         if ( ! isset( $_POST['exanspsel'] ) ) {
 
             $tag->name = $name;
-            $this->invalidate_log( 'Please select the correct icon(s).' );
+            $this->invalidate_log( 'Please select the correct icon(s).', true, 'captcha_wrong' );
             $result->invalidate( $tag, esc_attr__( 'Please select the correct icon(s).', 'exopite-anti-spam' ) );
 
             return $result;
@@ -373,7 +387,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
         if ( ! $image_captcha_data_decrypted ) {
 
-            $this->add_spam( 'captcha auth can not be decrypted' );
+            $this->add_spam( 'captcha auth can not be decrypted', 'captcha' );
 
             return $result;
         }
@@ -382,7 +396,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
         if ( ! is_array( $image_captcha_data ) ) {
 
-            $this->add_spam( 'captcha auth is invalid' );
+            $this->add_spam( 'captcha auth is invalid', 'captcha' );
 
             return $result;
         }
@@ -395,7 +409,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
         if ( ( time() - $image_captcha_time ) > $this->main->tokens->get_max_age( 'captcha' ) ) {
 
             $tag->name = $name;
-            $this->invalidate_log( 'captcha token expired, created: ' . wp_date( 'Y-m-d H:i:s', $image_captcha_time ), false );
+            $this->invalidate_log( 'captcha token expired, created: ' . wp_date( 'Y-m-d H:i:s', $image_captcha_time ), false, 'expired' );
             $result->invalidate( $tag, esc_attr__( 'Your session has timed out. Please submit the form again.', 'exopite-anti-spam' ) );
 
             return $result;
@@ -408,7 +422,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
         if ( ! $this->main->tokens->consume( $image_captcha_token_once, 'captcha' ) ) {
 
             $tag->name = $name;
-            $this->invalidate_log( 'captcha token already used' );
+            $this->invalidate_log( 'captcha token already used', true, 'token_used' );
             $result->invalidate( $tag, esc_attr__( "Token error.", 'exopite-anti-spam' ) . ' (12)' );
 
             return $result;
@@ -419,7 +433,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
         if ( $image_captcha_amounts !== $this->main->fields->get_image_captcha_amounts( $tag ) ) {
 
-            $this->add_spam( 'captcha amounts do not match the form: ' . implode( '/', $image_captcha_amounts ) );
+            $this->add_spam( 'captcha amounts do not match the form: ' . implode( '/', $image_captcha_amounts ), 'captcha' );
 
             return $result;
         }
@@ -430,7 +444,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
          */
         if ( null === $image_captcha_selected || false === $image_captcha_selected ) {
 
-            $this->add_spam( 'captcha answer is invalid' );
+            $this->add_spam( 'captcha answer is invalid', 'captcha' );
 
             return $result;
         }
@@ -441,7 +455,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
             $tag->name = $name;
             $invalidate_text = sprintf( esc_attr__( 'Please select the correct %s', 'exopite-anti-spam' ), $this->main->fields->get_icons_amount_translation( count( $image_captcha_selected ) ) ) . '.';
-            $this->invalidate_log( 'Please select the correct (' . count( $image_captcha_selected ) . ') icon(s).' );
+            $this->invalidate_log( 'Please select the correct (' . count( $image_captcha_selected ) . ') icon(s).', true, 'captcha_wrong' );
             $result->invalidate( $tag, $invalidate_text ) ;
 
             return $result;
@@ -481,7 +495,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
         if ( empty( $value ) ) {
 
-            $this->add_spam( 'timestamp empty' );
+            $this->add_spam( 'timestamp empty', 'timestamp' );
             // The JS loads a new timestamp.
             $this->refresh_timestamp = true;
 
@@ -497,7 +511,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
         // Only digits: other tokens (image captcha, acceptance) are encrypted with the same key.
          if ( empty( $timestamp_decrypted ) || ! preg_match( '/^\d{1,12}$/', $timestamp_decrypted ) ) {
 
-            $this->add_spam( 'timestamp can not be decrypted or is invalid' );
+            $this->add_spam( 'timestamp can not be decrypted or is invalid', 'timestamp' );
             // The JS loads a new one (e.g. a timestamp of an older plugin version: the next submission works).
             $this->refresh_timestamp = true;
 
@@ -512,7 +526,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
          */
         if ( false === $this->main->tokens->lock( $token, 'sent', 30 ) ) {
 
-            $this->invalidate_log( 'token is in use by an other request' );
+            $this->invalidate_log( 'token is in use by an other request', true, 'token_used' );
             $this->invalidate_visible( $result, $tags, esc_attr__( "Token error.", 'exopite-anti-spam' ) . ' (10)' );
             $this->refresh_timestamp = true;
 
@@ -521,7 +535,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
         if ( $this->main->tokens->is_used( $token, 'sent' ) ) {
 
-            $this->invalidate_log( 'token already exist' );
+            $this->invalidate_log( 'token already exist', true, 'token_used' );
             $this->invalidate_visible( $result, $tags, esc_attr__( "Token error.", 'exopite-anti-spam' ) . ' (10)' );
             $this->refresh_timestamp = true;
 
@@ -534,7 +548,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
             if ( $elapsed_seconds > ( $this->max_time ) ) {
 
-                $this->invalidate_log( 'Timeout, timestamp from user is bigger (' . $elapsed_seconds . ' sec), then the max time (' . $this->max_time . ' sec) to send.', false );
+                $this->invalidate_log( 'Timeout, timestamp from user is bigger (' . $elapsed_seconds . ' sec), then the max time (' . $this->max_time . ' sec) to send.', false, 'expired' );
                 $this->invalidate_visible( $result, $tags, esc_attr__( 'Your session has timed out. Please submit the form again.', 'exopite-anti-spam' ) );
                 $this->refresh_timestamp = true;
 
@@ -542,7 +556,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
             if ( $elapsed_seconds < $this->min_time ) {
 
-                $this->invalidate_log( 'Timestamp from user is smaller (' . $elapsed_seconds . ' sec), then the min time (' . $this->min_time . ' sec) to send.' );
+                $this->invalidate_log( 'Timestamp from user is smaller (' . $elapsed_seconds . ' sec), then the min time (' . $this->min_time . ' sec) to send.', true, 'too_fast' );
                 $this->invalidate_visible( $result, $tags, esc_attr__( 'The form was sent too quickly. Please wait a few seconds before trying again!', 'exopite-anti-spam' ) );
 
             }
@@ -578,7 +592,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
     public function wpcf7_validate_honeypot( $result, $tag ) {
 
-        if ( $this->main->public->is_user_logged_in() ) {
+        if ( $this->main->public->skip_checks() ) {
             return $result;
         }
 
@@ -598,7 +612,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
         if ( ! empty( $value ) ) {
 
-            $this->add_spam( 'honeypot is not empty' );
+            $this->add_spam( 'honeypot is not empty', 'honeypot' );
 
         }
 
@@ -614,7 +628,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
      */
     public function validate_text_textarea_bad_words( $result, $tag ) {
 
-        if ( $this->main->public->is_user_logged_in() ) {
+        if ( $this->main->public->skip_checks() ) {
             return $result;
         }
 
@@ -667,7 +681,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
             if ( preg_match( '/(?<![\w\x80-\xff])' . preg_quote( $word, '/' ) . '(?![\w\x80-\xff])/i', $content ) ) {
 
-                $this->invalidate_log( 'You are using some banned words. (own list)' );
+                $this->invalidate_log( 'You are using some banned words. (own list)', true, 'badwords' );
                 $result->invalidate( $tag, esc_attr__( "You are using some banned words.", 'exopite-anti-spam' ) );
                 $this->invalidated_fields[] = $tag->name;
 
@@ -685,7 +699,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
              */
             if( preg_match( "/\b{$word}\b/i", $content ) ) {
 
-                $this->invalidate_log( 'You are using some banned words.' );
+                $this->invalidate_log( 'You are using some banned words.', true, 'badwords' );
                 $result->invalidate( $tag, esc_attr__( "You are using some banned words.", 'exopite-anti-spam' ) );
                 $this->invalidated_fields[] = $tag->name;
 
@@ -755,7 +769,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
 
     public function validate_text_email_blacklist( $result, $tag ) {
 
-        if ( $this->main->public->is_user_logged_in() ) {
+        if ( $this->main->public->skip_checks() ) {
             return $result;
         }
 
@@ -773,7 +787,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
         $email_valid = function_exists( 'wpcf7_is_email' ) ? wpcf7_is_email( $email ) : is_email( $email );
 
         if ( ! $email_valid ) {
-            $this->invalidate_log( 'invalid_email', false );
+            $this->invalidate_log( 'invalid_email', false, 'invalid_other' );
             $result->invalidate( $tag, wpcf7_get_message( 'invalid_email' ) );
             $this->invalidated_fields[] = $tag->name;
             return $result;
@@ -813,7 +827,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
             if ( ! empty( $display_error_message_domain ) ) {
                 $domain_error_message = $display_error_message_domain;
             }
-            $this->invalidate_log( $domain_error_message );
+            $this->invalidate_log( $domain_error_message, true, 'blacklist' );
             $result->invalidate( $tag, $domain_error_message );
             $this->invalidated_fields[] = $tag->name;
         }
@@ -830,7 +844,7 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
             if ( ! empty( $display_error_message_email ) ) {
                 $email_error_message = $display_error_message_email;
             }
-            $this->invalidate_log( $email_error_message );
+            $this->invalidate_log( $email_error_message, true, 'blacklist' );
             $result->invalidate( $tag, $email_error_message );
             $this->invalidated_fields[] = $tag->name;
 
@@ -840,14 +854,32 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
     }
 
     /**
+     * Reason codes of the current submission, each code once.
+     *
+     * @return array  array( 'spam' => string[], 'invalid' => string[] )
+     */
+    public function get_codes() {
+
+        return array(
+            'spam'    => array_values( array_unique( $this->spam_codes ) ),
+            'invalid' => array_values( array_unique( $this->invalid_codes ) ),
+        );
+    }
+
+    /**
      * @param string $reason
      * @param bool   $count_failure  Counts as a failed attempt for the rate limit.
      *                               False for typical human errors (timeout, forgotten selection, invalid e-mail).
+     * @param string $code           Stable reason code for the statistics (e.g. 'too_fast'), empty: not counted.
      */
-    public function invalidate_log( $reason, $count_failure = true ) {
+    public function invalidate_log( $reason, $count_failure = true, $code = '' ) {
 
         if ( $count_failure ) {
             $this->main->ratelimiter->failed = true;
+        }
+
+        if ( '' !== $code ) {
+            $this->invalid_codes[] = $code;
         }
 
         if ( ! empty( $reason ) && $this->main->public->is_logging() ) {

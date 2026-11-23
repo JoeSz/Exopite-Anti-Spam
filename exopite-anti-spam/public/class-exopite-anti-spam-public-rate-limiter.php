@@ -224,7 +224,7 @@ class Exopite_Anti_Spam_Public_Rate_Limiter {
      */
     public function applies() {
 
-        return ! $this->main->public->is_user_logged_in() && $this->is_active() && '' !== $this->get_ip();
+        return ! $this->main->public->skip_checks() && $this->is_active() && '' !== $this->get_ip();
     }
 
     /**
@@ -242,7 +242,7 @@ class Exopite_Anti_Spam_Public_Rate_Limiter {
         if ( is_array( $data ) && ! empty( $data['blocked_until'] ) && $data['blocked_until'] > time() ) {
 
             $this->blocked = true;
-            $this->main->validate->invalidate_log( 'rate limit: too many failed attempts, blocked until ' . wp_date( 'Y-m-d H:i:s', $data['blocked_until'] ), false );
+            $this->main->validate->invalidate_log( 'rate limit: too many failed attempts, blocked until ' . wp_date( 'Y-m-d H:i:s', $data['blocked_until'] ), false, 'ratelimit' );
 
             $result->invalidate( $this->main->public->get_first_named_tag( $tags ), esc_attr__( 'Too many failed attempts. Please try again in a few minutes.', 'exopite-anti-spam' ) );
 

@@ -119,6 +119,14 @@ class Exopite_Anti_Spam {
 
 	public $honeypot_name = 'eashpc_website_url';
 
+    /**
+     * True while a quarantined submission is released: all anti spam checks are skipped
+     * (Exopite_Anti_Spam_Public::skip_checks()).
+     *
+     * @var bool
+     */
+    public $releasing = false;
+
 	/**
 	 * Define the core functionality of the plugin.
 	 *
