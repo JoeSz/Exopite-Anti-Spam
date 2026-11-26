@@ -60,6 +60,12 @@ class EAS_Test_Email_Check_No_Records extends Exopite_Anti_Spam_Public_Email_Che
 	}
 }
 
+class EAS_Test_Email_Check_Empty_Then_Error extends Exopite_Anti_Spam_Public_Email_Check {
+	protected function lookup( $domain, $type ) {
+		return DNS_MX === $type ? array() : false;
+	}
+}
+
 $domain = 'eas-dns-test-' . wp_generate_password( 8, false ) . '.example';
 $error  = new EAS_Test_Email_Check_DNS_Error( $main );
 eas_assert( true === $error->domain_exists( $domain ) && '2' === get_transient( 'eas_mx_' . md5( $domain ) ), 'DNS error: accepted (fail open), cached briefly' );
@@ -68,6 +74,13 @@ delete_transient( 'eas_mx_' . md5( $domain ) );
 $none = new EAS_Test_Email_Check_No_Records( $main );
 eas_assert( false === $none->domain_exists( $domain ), 'no MX, A, AAAA: does not exist' );
 delete_transient( 'eas_mx_' . md5( $domain ) );
+
+// Resolver of an unknown domain on Windows (and some others): empty MX list, then an error for A / AAAA
+$empty_then_error = new EAS_Test_Email_Check_Empty_Then_Error( $main );
+eas_assert( false === $empty_then_error->domain_exists( $domain ) && '0' === get_transient( 'eas_mx_' . md5( $domain ) ), 'empty MX list, then an error: does not exist (the resolver answered)' );
+delete_transient( 'eas_mx_' . md5( $domain ) );
+
+eas_assert( false === $main->email_check->domain_exists( 'no-such-domain-' . wp_generate_password( 8, false, false ) . '.de' ), 'real DNS: an unknown .de domain does not exist' );
 
 $result = eas_submit( $form_id, $post( 'test@gmail.com' ) );
 eas_assert( 'mail_sent' === $result['status'], 'gmail.com with real DNS: sent' );

@@ -675,12 +675,11 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
         $content = preg_replace( '/\s+/', ' ', $content );
 
         /**
-         * Own words are plain text: quoted, and UTF-8 bytes (umlauts) count as word characters,
-         * so "ärger" is found as a word, but not inside "verärgert".
+         * Own words are plain text: quoted, whole words only (see word_pattern()).
          */
         foreach ( $custom_words as $word ) {
 
-            if ( preg_match( '/(?<![\w\x80-\xff])' . preg_quote( $word, '/' ) . '(?![\w\x80-\xff])/i', $content ) ) {
+            if ( preg_match( $this->word_pattern( preg_quote( $word, '/' ) ), $content ) ) {
 
                 $this->invalidate_log( 'You are using some banned words. (own list)', true, 'badwords' );
                 $result->invalidate( $tag, esc_attr__( "You are using some banned words.", 'exopite-anti-spam' ) );
@@ -694,11 +693,14 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
         foreach ( (array) $words as $word ) {
 
             /**
-             * Check if a string contains a specific word?
-             * Not a substring.
-             * @link https://stackoverflow.com/questions/4366730/how-do-i-check-if-a-string-contains-a-specific-word/4366744#4366744
+             * Whole words only (not a substring), see word_pattern(). The list entries are regex
+             * fragments; a broken fragment (e.g. added by the filter) is skipped without a warning.
              */
-            if( preg_match( "/\b{$word}\b/i", $content ) ) {
+            set_error_handler( '__return_true' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- preg_match() warns on a broken fragment.
+            $found = preg_match( $this->word_pattern( (string) $word ), $content );
+            restore_error_handler();
+
+            if ( 1 === $found ) {
 
                 $this->invalidate_log( 'You are using some banned words.', true, 'badwords' );
                 $result->invalidate( $tag, esc_attr__( "You are using some banned words.", 'exopite-anti-spam' ) );
@@ -760,6 +762,27 @@ class Exopite_Anti_Spam_Public_Validate_Fields {
         }
 
         return array_unique( $words );
+    }
+
+    /**
+     * Regex of a bad word: a word boundary only at an end where the word has a word character.
+     *
+     * "\b...\b" failed for words that start or end with a sign: "earn \$" never matched
+     * ("\b" needs a word character next to the "$"). Entries like "url=" must still match
+     * "[url=http..." (a letter right after the "="). UTF-8 bytes (umlauts) count as word
+     * characters, so "ärger" is found as a word, but not inside "verärgert".
+     *
+     * @param string $fragment Regex fragment (own words: quoted with preg_quote()).
+     * @return string Pattern with delimiters, case-insensitive.
+     */
+    public function word_pattern( $fragment ) {
+
+        $word_char = '[\w\x80-\xff]';
+        $start     = preg_match( '/^' . $word_char . '/', $fragment ) ? '(?<!' . $word_char . ')' : '';
+        // An escaped last character ("\d", "\$") is not a word character of the text.
+        $end       = preg_match( '/' . $word_char . '$/', $fragment ) && ! preg_match( '/\\\\.$/', $fragment ) ? '(?!' . $word_char . ')' : '';
+
+        return '/' . $start . '(?:' . $fragment . ')' . $end . '/i';
     }
 
     public function to_lower( $text ) {

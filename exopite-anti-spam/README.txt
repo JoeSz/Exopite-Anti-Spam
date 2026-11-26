@@ -5,7 +5,7 @@ Tags: comments, spam
 Requires at least: 5.3
 Tested up to: 7.1
 Requires PHP: 7.0
-Stable tag: 20261124
+Stable tag: 20261126
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -129,6 +129,11 @@ The plugin allows you to filter certain email addresses and domains.
 2. Screenshot frontend
 
 == Changelog ==
+
+= 20261126 =
+* Fix: bad / spam words of the built-in list that start or end with a sign never matched (e.g. "earn \$": the word boundary "\b" needs a letter next to the "$"). Words are now matched with a boundary only at an end with a letter or digit, so "url=" still finds "[url=http..." and "a href=" finds links; own words use the same rule. A broken entry added with the filter exopite_anti_spam_bad_words is skipped without a PHP warning
+* Fix: e-mail check "Reject e-mail domains that do not exist": some resolvers (e.g. on Windows) answer an unknown domain with an empty MX list and then an error for the A record, which was taken as a DNS error and accepted the address. Once the resolver has answered, a later error now counts as "no record"; a DNS error before any answer still accepts the address
+* Dev: CLI test tests/cli/test-badwords.php, more DNS cases in tests/cli/test-email-check.php
 
 = 20261124 =
 * New: statistics, always active: every submission is counted once per day, form and reason (sent, mail failed, or the reasons of the anti spam checks with stable codes, e.g. honeypot, timestamp, captcha, too fast, bad words). New page "Anti Spam" in the Contact menu, tab "Statistics": last 7 and 30 days per form and reason. Only counters (table {prefix}eas_cf7_stats), rows older than 90 days are deleted

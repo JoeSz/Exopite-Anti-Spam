@@ -366,6 +366,7 @@ class Exopite_Anti_Spam_Public_Email_Check {
 	/**
 	 * Does the domain have an MX record, or (RFC 5321 fallback) an A or AAAA record?
 	 * DNS errors: true (fail open), cached for 5 minutes. Results are cached for a day.
+	 * An error after an answer of the resolver (e.g. an empty MX list) counts as "no record".
 	 *
 	 * @param string $domain Domain.
 	 * @return bool
@@ -397,15 +398,21 @@ class Exopite_Anti_Spam_Public_Email_Check {
 			return '0' !== $cached;
 		}
 
+		// Some resolvers answer an unknown domain with an empty MX list and then an error for A:
+		// once the resolver has answered, a later error means "no record", not a DNS problem.
+		$answered = false;
+
 		foreach ( array( DNS_MX, DNS_A, DNS_AAAA ) as $type ) {
 
 			$records = $this->lookup( $domain, $type );
 
 			// DNS error (no answer, no DNS on the server): accept the address.
-			if ( false === $records ) {
+			if ( false === $records && ! $answered ) {
 				set_transient( $key, '2', 5 * MINUTE_IN_SECONDS );
 				return true;
 			}
+
+			$answered = true;
 
 			if ( ! empty( $records ) ) {
 				set_transient( $key, '1', DAY_IN_SECONDS );
